@@ -1,0 +1,772 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		092679867606E8E3343B4899 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65ACB4D2F7937CF7DC18B27 /* SettingsView.swift */; };
+		0A5AF4B023A25936DDCF13BA /* MotionFeatureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307D456250031D6388F6813E /* MotionFeatureDetector.swift */; };
+		16829FA25630C16629E91635 /* SensorMonitoringPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */; };
+		1C86FB2641866707BBB05626 /* SensorServiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9BC8F439C09E1ACE0564A81 /* SensorServiceController.swift */; };
+		21339BF1B57ABCA5863723AC /* SlaptopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5424CBE1A933B221CD7D0049 /* SlaptopApp.swift */; };
+		22C6C7FFA997E0DB5BB1E067 /* ActivationPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5A9E57B2241CA2B70B3931 /* ActivationPreference.swift */; };
+		25E1F830682914A88197104A /* LiveSensorSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C28A1D72F9ECACA259FCA0 /* LiveSensorSample.swift */; };
+		29B375B197FFF6AACB96BBD2 /* SensorXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */; };
+		2D8DC5F1FC29343DB05E6636 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9505F5BFF978FAABAE029271 /* MenuBarView.swift */; };
+		3394391FADD57FD704586661 /* SensorDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026A90F7C48D0494431CBA42 /* SensorDataView.swift */; };
+		36BD83C64D49C0E9E622280A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC63B79D14BAC461DA3BA48 /* AppDelegate.swift */; };
+		3F5439C22057DB49DCC0FB3A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1BD5637F5F11231EEE86A0 /* main.swift */; };
+		5345434210C7816F268306E8 /* MissionControlController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */; };
+		56FD7F0B5B78D994FB88C9D7 /* CodeSignatureValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8708430F7BDF572D1CF4F2B1 /* CodeSignatureValidator.swift */; };
+		58DDE41D68E72387807AC065 /* SPUHIDMotionSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 090BB54D9EFE531CA6A92425 /* SPUHIDMotionSensor.swift */; };
+		62D95986608308D9FBD678F1 /* Slaptop-icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6679059206F0F8AAD01B38DF /* Slaptop-icon.icon */; };
+		7FBFDD7309AD610844363637 /* TapTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */; };
+		86588A2689E68A6B74B95CB7 /* TapTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */; };
+		8BBC542111DF55FF4B46B301 /* ImpactFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */; };
+		95ECEAA821EC855618CC6D37 /* NativeVerticalScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFB194000F20CE57D0EC36A7 /* NativeVerticalScrollView.swift */; };
+		984152CFF8B8B1C798ED7437 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AB0AC81430D0503F53B712 /* FirstLaunchView.swift */; };
+		9A08131686B4AD1AA9B95478 /* LaptopTapAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70858EA27D82F058BCFDA8EC /* LaptopTapAnimationView.swift */; };
+		9D442B9DC0162D5B6D1BCF8C /* AppVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49920BCC75DB75C7AFAE4206 /* AppVersion.swift */; };
+		A1B9ACF5D0FE934FE23AD323 /* VisualLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C547F2E972F3B2E7F86297 /* VisualLayoutTests.swift */; };
+		ACCE9FA19600E757A07E32B6 /* guru.am.slaptop.sensor-daemon.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0BC90A39CC9320E3E5C55F2F /* guru.am.slaptop.sensor-daemon.plist */; };
+		AD4C93760A8899E60D68ED2F /* SensorXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */; };
+		BBB2CC888C959D82B93973E3 /* NSLock+WithLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED3BAFA8BD2DE5F9A54C290 /* NSLock+WithLock.swift */; };
+		BFF18DCCE2D8922A2E21F03D /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B147CC28CA1BE6F35ADD1E7C /* AppModel.swift */; };
+		C0C87BF3B21DB821A2ABA3F8 /* TapClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */; };
+		C8CD8CA2C335A83D0579CFC7 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 68A0171A917107C2285ED4F5 /* ServiceManagement.framework */; };
+		CD10D1C7E00C6026490AE557 /* TapSensitivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */; };
+		D8010BBC2A22BADFCC462532 /* SensorChartScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF7B9DA21D1A0BEBA98CFC9 /* SensorChartScale.swift */; };
+		D802017C99FF350E0020DBBE /* SensorDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9EAA048E3B55329CF729A1 /* SensorDaemon.swift */; };
+		E54CBB37B6550AA49076BF51 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9ACB88755BA3FB230336DA92 /* Security.framework */; };
+		E990E0C856EE7C318D0ADE47 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D144154FDAC60A77A90AC0 /* AboutView.swift */; };
+		E9C26137A480E092E7505E8F /* TapSensitivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */; };
+		EE73B2A43272F81582BFE6F6 /* TapClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D39DCACC50DA25D278BBFA /* TapClassifierTests.swift */; };
+		F1291EC9D6F9AF6CE4ED4C90 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5519916BCD0BD5B3FA76EE4 /* IOKit.framework */; };
+		FC13717A43326BE690B435F5 /* MotionFeatureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307D456250031D6388F6813E /* MotionFeatureDetector.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4FCF7C253B8DB8D03228C6B2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F047329877A7A5C1600F1C1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 9A6B74D23E0D10756D48865A;
+			remoteInfo = SlaptopSensorDaemon;
+		};
+		87D5D18B3CB495E04715AEC8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5F047329877A7A5C1600F1C1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 25D39AC72A0B2D5E8689E19F;
+			remoteInfo = Slaptop;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E82710DA2AFB1F8B69BFE275 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/LaunchDaemons;
+			dstSubfolderSpec = 1;
+			files = (
+				ACCE9FA19600E757A07E32B6 /* guru.am.slaptop.sensor-daemon.plist in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		026A90F7C48D0494431CBA42 /* SensorDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorDataView.swift; sourceTree = "<group>"; };
+		02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorXPCProtocol.swift; sourceTree = "<group>"; };
+		090BB54D9EFE531CA6A92425 /* SPUHIDMotionSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPUHIDMotionSensor.swift; sourceTree = "<group>"; };
+		0BC90A39CC9320E3E5C55F2F /* guru.am.slaptop.sensor-daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "guru.am.slaptop.sensor-daemon.plist"; sourceTree = "<group>"; };
+		0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapSensitivity.swift; sourceTree = "<group>"; };
+		1FC63B79D14BAC461DA3BA48 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapClassifier.swift; sourceTree = "<group>"; };
+		2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapTiming.swift; sourceTree = "<group>"; };
+		307D456250031D6388F6813E /* MotionFeatureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionFeatureDetector.swift; sourceTree = "<group>"; };
+		387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactFeatures.swift; sourceTree = "<group>"; };
+		3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMonitoringPolicy.swift; sourceTree = "<group>"; };
+		3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionControlController.swift; sourceTree = "<group>"; };
+		3C5A9E57B2241CA2B70B3931 /* ActivationPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationPreference.swift; sourceTree = "<group>"; };
+		3DF4A09ECCC5D57B8BB1BC82 /* SlaptopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SlaptopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		40EA233EA044111039538D74 /* SlaptopSensorDaemon */ = {isa = PBXFileReference; includeInIndex = 0; path = SlaptopSensorDaemon; sourceTree = BUILT_PRODUCTS_DIR; };
+		45C3F5F13E9AD25B9B3C47BD /* Slaptop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slaptop.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		49920BCC75DB75C7AFAE4206 /* AppVersion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppVersion.swift; sourceTree = "<group>"; };
+		4EF7B9DA21D1A0BEBA98CFC9 /* SensorChartScale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorChartScale.swift; sourceTree = "<group>"; };
+		5424CBE1A933B221CD7D0049 /* SlaptopApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SlaptopApp.swift; sourceTree = "<group>"; };
+		6679059206F0F8AAD01B38DF /* Slaptop-icon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "Slaptop-icon.icon"; sourceTree = "<group>"; };
+		68A0171A917107C2285ED4F5 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
+		70858EA27D82F058BCFDA8EC /* LaptopTapAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaptopTapAnimationView.swift; sourceTree = "<group>"; };
+		78D144154FDAC60A77A90AC0 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		78D39DCACC50DA25D278BBFA /* TapClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapClassifierTests.swift; sourceTree = "<group>"; };
+		7B9EAA048E3B55329CF729A1 /* SensorDaemon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorDaemon.swift; sourceTree = "<group>"; };
+		7E1BD5637F5F11231EEE86A0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		8708430F7BDF572D1CF4F2B1 /* CodeSignatureValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSignatureValidator.swift; sourceTree = "<group>"; };
+		8ED3BAFA8BD2DE5F9A54C290 /* NSLock+WithLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSLock+WithLock.swift"; sourceTree = "<group>"; };
+		9505F5BFF978FAABAE029271 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		97C547F2E972F3B2E7F86297 /* VisualLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualLayoutTests.swift; sourceTree = "<group>"; };
+		9ACB88755BA3FB230336DA92 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		A9AB0AC81430D0503F53B712 /* FirstLaunchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirstLaunchView.swift; sourceTree = "<group>"; };
+		AFB194000F20CE57D0EC36A7 /* NativeVerticalScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeVerticalScrollView.swift; sourceTree = "<group>"; };
+		B147CC28CA1BE6F35ADD1E7C /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		B8C28A1D72F9ECACA259FCA0 /* LiveSensorSample.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveSensorSample.swift; sourceTree = "<group>"; };
+		B9BC8F439C09E1ACE0564A81 /* SensorServiceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorServiceController.swift; sourceTree = "<group>"; };
+		C5519916BCD0BD5B3FA76EE4 /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
+		D65ACB4D2F7937CF7DC18B27 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A434B04A67C494AD791A566F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C8CD8CA2C335A83D0579CFC7 /* ServiceManagement.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B1A9BDD2CEA481B8E685A708 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F1291EC9D6F9AF6CE4ED4C90 /* IOKit.framework in Frameworks */,
+				E54CBB37B6550AA49076BF51 /* Security.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0E69616662885F9567B62499 /* LaunchDaemons */ = {
+			isa = PBXGroup;
+			children = (
+				0BC90A39CC9320E3E5C55F2F /* guru.am.slaptop.sensor-daemon.plist */,
+			);
+			path = LaunchDaemons;
+			sourceTree = "<group>";
+		};
+		0F92DF1445F2045E5148BACC /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				6679059206F0F8AAD01B38DF /* Slaptop-icon.icon */,
+				0E69616662885F9567B62499 /* LaunchDaemons */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		175B1A9C3E75D7C9FE8C6EAB /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				307D456250031D6388F6813E /* MotionFeatureDetector.swift */,
+				02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */,
+				0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */,
+				2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		201AED97F36CD45F14B1C2E4 /* SlaptopTests */ = {
+			isa = PBXGroup;
+			children = (
+				78D39DCACC50DA25D278BBFA /* TapClassifierTests.swift */,
+				97C547F2E972F3B2E7F86297 /* VisualLayoutTests.swift */,
+			);
+			path = SlaptopTests;
+			sourceTree = "<group>";
+		};
+		387009AE6163E612C8F43FDF = {
+			isa = PBXGroup;
+			children = (
+				0F92DF1445F2045E5148BACC /* Resources */,
+				175B1A9C3E75D7C9FE8C6EAB /* Shared */,
+				DB4868EB04BDB647948BA149 /* Slaptop */,
+				7EB9D89A9711D60BEFAC5F14 /* SlaptopSensorDaemon */,
+				201AED97F36CD45F14B1C2E4 /* SlaptopTests */,
+				EDFDBE2BB051C28A604634B2 /* Frameworks */,
+				9963A0CB1608D14715EB1ED4 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		604A2171D199DB93199BD9DB /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				78D144154FDAC60A77A90AC0 /* AboutView.swift */,
+				A9AB0AC81430D0503F53B712 /* FirstLaunchView.swift */,
+				70858EA27D82F058BCFDA8EC /* LaptopTapAnimationView.swift */,
+				9505F5BFF978FAABAE029271 /* MenuBarView.swift */,
+				AFB194000F20CE57D0EC36A7 /* NativeVerticalScrollView.swift */,
+				026A90F7C48D0494431CBA42 /* SensorDataView.swift */,
+				D65ACB4D2F7937CF7DC18B27 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		63805EEA41B0ABEE77268A9F /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */,
+				B9BC8F439C09E1ACE0564A81 /* SensorServiceController.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		7EB9D89A9711D60BEFAC5F14 /* SlaptopSensorDaemon */ = {
+			isa = PBXGroup;
+			children = (
+				8708430F7BDF572D1CF4F2B1 /* CodeSignatureValidator.swift */,
+				7E1BD5637F5F11231EEE86A0 /* main.swift */,
+				8ED3BAFA8BD2DE5F9A54C290 /* NSLock+WithLock.swift */,
+				7B9EAA048E3B55329CF729A1 /* SensorDaemon.swift */,
+				090BB54D9EFE531CA6A92425 /* SPUHIDMotionSensor.swift */,
+			);
+			path = SlaptopSensorDaemon;
+			sourceTree = "<group>";
+		};
+		9963A0CB1608D14715EB1ED4 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				45C3F5F13E9AD25B9B3C47BD /* Slaptop.app */,
+				40EA233EA044111039538D74 /* SlaptopSensorDaemon */,
+				3DF4A09ECCC5D57B8BB1BC82 /* SlaptopTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AD679DAC543315DA7B1AD154 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				1FC63B79D14BAC461DA3BA48 /* AppDelegate.swift */,
+				B147CC28CA1BE6F35ADD1E7C /* AppModel.swift */,
+				5424CBE1A933B221CD7D0049 /* SlaptopApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		C8556F7AA1953196A0408513 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				3C5A9E57B2241CA2B70B3931 /* ActivationPreference.swift */,
+				49920BCC75DB75C7AFAE4206 /* AppVersion.swift */,
+				387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */,
+				B8C28A1D72F9ECACA259FCA0 /* LiveSensorSample.swift */,
+				4EF7B9DA21D1A0BEBA98CFC9 /* SensorChartScale.swift */,
+				3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */,
+				2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		DB4868EB04BDB647948BA149 /* Slaptop */ = {
+			isa = PBXGroup;
+			children = (
+				AD679DAC543315DA7B1AD154 /* App */,
+				C8556F7AA1953196A0408513 /* Models */,
+				63805EEA41B0ABEE77268A9F /* Services */,
+				604A2171D199DB93199BD9DB /* Views */,
+			);
+			path = Slaptop;
+			sourceTree = "<group>";
+		};
+		EDFDBE2BB051C28A604634B2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				C5519916BCD0BD5B3FA76EE4 /* IOKit.framework */,
+				9ACB88755BA3FB230336DA92 /* Security.framework */,
+				68A0171A917107C2285ED4F5 /* ServiceManagement.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0DF769C6264DCB67C1D0740C /* SlaptopTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 39A97E20406563BFE25E1A50 /* Build configuration list for PBXNativeTarget "SlaptopTests" */;
+			buildPhases = (
+				28BF2C1B6C239954FD9AF6FD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CE941CCD29C7811841BA7DFA /* PBXTargetDependency */,
+			);
+			name = SlaptopTests;
+			packageProductDependencies = (
+			);
+			productName = SlaptopTests;
+			productReference = 3DF4A09ECCC5D57B8BB1BC82 /* SlaptopTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		25D39AC72A0B2D5E8689E19F /* Slaptop */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0E9C6050A371F69EB1153FEC /* Build configuration list for PBXNativeTarget "Slaptop" */;
+			buildPhases = (
+				21A45F300DF9F3931EFD2F07 /* Sources */,
+				110F7FE83F4FE84E5ABCB8D8 /* Resources */,
+				E82710DA2AFB1F8B69BFE275 /* CopyFiles */,
+				A434B04A67C494AD791A566F /* Frameworks */,
+				8DFB4FDCF3C88333736A0BC1 /* Embed Sensor Daemon */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BD84281AD021EB322A8F3DAF /* PBXTargetDependency */,
+			);
+			name = Slaptop;
+			packageProductDependencies = (
+			);
+			productName = Slaptop;
+			productReference = 45C3F5F13E9AD25B9B3C47BD /* Slaptop.app */;
+			productType = "com.apple.product-type.application";
+		};
+		9A6B74D23E0D10756D48865A /* SlaptopSensorDaemon */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CEA2661B43CD386EDE5F213B /* Build configuration list for PBXNativeTarget "SlaptopSensorDaemon" */;
+			buildPhases = (
+				A88B544D685DDBF5701E50BD /* Sources */,
+				B1A9BDD2CEA481B8E685A708 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SlaptopSensorDaemon;
+			packageProductDependencies = (
+			);
+			productName = SlaptopSensorDaemon;
+			productReference = 40EA233EA044111039538D74 /* SlaptopSensorDaemon */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5F047329877A7A5C1600F1C1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					0DF769C6264DCB67C1D0740C = {
+						DevelopmentTeam = 59A594LZGR;
+						ProvisioningStyle = Automatic;
+					};
+					25D39AC72A0B2D5E8689E19F = {
+						DevelopmentTeam = 59A594LZGR;
+						ProvisioningStyle = Automatic;
+					};
+					9A6B74D23E0D10756D48865A = {
+						DevelopmentTeam = 59A594LZGR;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = A14D0BA139005882D1E85DB7 /* Build configuration list for PBXProject "Slaptop" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 387009AE6163E612C8F43FDF;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9963A0CB1608D14715EB1ED4 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				9A6B74D23E0D10756D48865A /* SlaptopSensorDaemon */,
+				25D39AC72A0B2D5E8689E19F /* Slaptop */,
+				0DF769C6264DCB67C1D0740C /* SlaptopTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		110F7FE83F4FE84E5ABCB8D8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				62D95986608308D9FBD678F1 /* Slaptop-icon.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		8DFB4FDCF3C88333736A0BC1 /* Embed Sensor Daemon */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(BUILT_PRODUCTS_DIR)/SlaptopSensorDaemon",
+			);
+			name = "Embed Sensor Daemon";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SlaptopSensorDaemon",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\nhelper_source=\"${BUILT_PRODUCTS_DIR}/SlaptopSensorDaemon\"\nhelper_destination=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SlaptopSensorDaemon\"\n/bin/mkdir -p \"$(/usr/bin/dirname \"${helper_destination}\")\"\n/bin/cp \"${helper_source}\" \"${helper_destination}\"\nif [ \"${CONFIGURATION}\" = \"Release\" ] && [ -n \"${EXPANDED_CODE_SIGN_IDENTITY:-}\" ] && [ \"${EXPANDED_CODE_SIGN_IDENTITY}\" != \"-\" ]; then\n  /usr/bin/codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" --identifier \"guru.am.slaptop.sensor-daemon\" --options runtime --timestamp \"${helper_destination}\"\nelse\n  /usr/bin/codesign --force --sign \"${EXPANDED_CODE_SIGN_IDENTITY:--}\" --identifier \"guru.am.slaptop.sensor-daemon\" \"${helper_destination}\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		21A45F300DF9F3931EFD2F07 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E990E0C856EE7C318D0ADE47 /* AboutView.swift in Sources */,
+				22C6C7FFA997E0DB5BB1E067 /* ActivationPreference.swift in Sources */,
+				36BD83C64D49C0E9E622280A /* AppDelegate.swift in Sources */,
+				BFF18DCCE2D8922A2E21F03D /* AppModel.swift in Sources */,
+				9D442B9DC0162D5B6D1BCF8C /* AppVersion.swift in Sources */,
+				984152CFF8B8B1C798ED7437 /* FirstLaunchView.swift in Sources */,
+				8BBC542111DF55FF4B46B301 /* ImpactFeatures.swift in Sources */,
+				9A08131686B4AD1AA9B95478 /* LaptopTapAnimationView.swift in Sources */,
+				25E1F830682914A88197104A /* LiveSensorSample.swift in Sources */,
+				2D8DC5F1FC29343DB05E6636 /* MenuBarView.swift in Sources */,
+				5345434210C7816F268306E8 /* MissionControlController.swift in Sources */,
+				FC13717A43326BE690B435F5 /* MotionFeatureDetector.swift in Sources */,
+				95ECEAA821EC855618CC6D37 /* NativeVerticalScrollView.swift in Sources */,
+				D8010BBC2A22BADFCC462532 /* SensorChartScale.swift in Sources */,
+				3394391FADD57FD704586661 /* SensorDataView.swift in Sources */,
+				16829FA25630C16629E91635 /* SensorMonitoringPolicy.swift in Sources */,
+				1C86FB2641866707BBB05626 /* SensorServiceController.swift in Sources */,
+				29B375B197FFF6AACB96BBD2 /* SensorXPCProtocol.swift in Sources */,
+				092679867606E8E3343B4899 /* SettingsView.swift in Sources */,
+				21339BF1B57ABCA5863723AC /* SlaptopApp.swift in Sources */,
+				C0C87BF3B21DB821A2ABA3F8 /* TapClassifier.swift in Sources */,
+				CD10D1C7E00C6026490AE557 /* TapSensitivity.swift in Sources */,
+				7FBFDD7309AD610844363637 /* TapTiming.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		28BF2C1B6C239954FD9AF6FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE73B2A43272F81582BFE6F6 /* TapClassifierTests.swift in Sources */,
+				A1B9ACF5D0FE934FE23AD323 /* VisualLayoutTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A88B544D685DDBF5701E50BD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				56FD7F0B5B78D994FB88C9D7 /* CodeSignatureValidator.swift in Sources */,
+				0A5AF4B023A25936DDCF13BA /* MotionFeatureDetector.swift in Sources */,
+				BBB2CC888C959D82B93973E3 /* NSLock+WithLock.swift in Sources */,
+				58DDE41D68E72387807AC065 /* SPUHIDMotionSensor.swift in Sources */,
+				D802017C99FF350E0020DBBE /* SensorDaemon.swift in Sources */,
+				AD4C93760A8899E60D68ED2F /* SensorXPCProtocol.swift in Sources */,
+				E9C26137A480E092E7505E8F /* TapSensitivity.swift in Sources */,
+				86588A2689E68A6B74B95CB7 /* TapTiming.swift in Sources */,
+				3F5439C22057DB49DCC0FB3A /* main.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BD84281AD021EB322A8F3DAF /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 9A6B74D23E0D10756D48865A /* SlaptopSensorDaemon */;
+			targetProxy = 4FCF7C253B8DB8D03228C6B2 /* PBXContainerItemProxy */;
+		};
+		CE941CCD29C7811841BA7DFA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 25D39AC72A0B2D5E8689E19F /* Slaptop */;
+			targetProxy = 87D5D18B3CB495E04715AEC8 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		03FF188204D98EED8C8C22B4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Slaptop-icon";
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = "Resources/Slaptop-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop;
+				PRODUCT_NAME = Slaptop;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+			};
+			name = Debug;
+		};
+		16FB13B77BB4F5BA0507837C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 59A594LZGR;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		1B382CA67263CCF64D274B67 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "guru.am.slaptop.sensor-daemon";
+				PRODUCT_NAME = SlaptopSensorDaemon;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		2CB31AF2152499878B2DEE2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Slaptop-icon";
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = "Resources/Slaptop-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop;
+				PRODUCT_NAME = Slaptop;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+			};
+			name = Release;
+		};
+		51F027A131DF7A3C8682A882 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = arm64;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 59A594LZGR;
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		79654B52B7F6EC976145F778 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGNING_ALLOWED = YES;
+				COMBINE_HIDPI_IMAGES = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "guru.am.slaptop.sensor-daemon";
+				PRODUCT_NAME = SlaptopSensorDaemon;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		8EF9B2D55997E0E7932F917D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Slaptop.app/Contents/MacOS/Slaptop";
+			};
+			name = Debug;
+		};
+		BA318BBC62174E51021A0D11 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop.tests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Slaptop.app/Contents/MacOS/Slaptop";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0E9C6050A371F69EB1153FEC /* Build configuration list for PBXNativeTarget "Slaptop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03FF188204D98EED8C8C22B4 /* Debug */,
+				2CB31AF2152499878B2DEE2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		39A97E20406563BFE25E1A50 /* Build configuration list for PBXNativeTarget "SlaptopTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8EF9B2D55997E0E7932F917D /* Debug */,
+				BA318BBC62174E51021A0D11 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A14D0BA139005882D1E85DB7 /* Build configuration list for PBXProject "Slaptop" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				51F027A131DF7A3C8682A882 /* Debug */,
+				16FB13B77BB4F5BA0507837C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CEA2661B43CD386EDE5F213B /* Build configuration list for PBXNativeTarget "SlaptopSensorDaemon" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				79654B52B7F6EC976145F778 /* Debug */,
+				1B382CA67263CCF64D274B67 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5F047329877A7A5C1600F1C1 /* Project object */;
+}
