@@ -1,0 +1,118 @@
+name: Slaptop
+options:
+  bundleIdPrefix: guru.am
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  xcodeVersion: "16.0"
+
+settings:
+  base:
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: false
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_VERSION: "5.0"
+    CLANG_ENABLE_MODULES: true
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: "59A594LZGR"
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: -Onone
+      ENABLE_HARDENED_RUNTIME: false
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      ENABLE_HARDENED_RUNTIME: true
+      # Privileged SMAppService daemons are rejected by AMFI when a local
+      # Apple Development build carries Xcode's get-task-allow entitlement.
+      CODE_SIGN_INJECT_BASE_ENTITLEMENTS: false
+
+targets:
+  SlaptopSensorDaemon:
+    type: tool
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: SlaptopSensorDaemon
+      - path: Shared
+    dependencies:
+      - sdk: IOKit.framework
+      - sdk: Security.framework
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: guru.am.slaptop.sensor-daemon
+        PRODUCT_NAME: SlaptopSensorDaemon
+        CODE_SIGNING_ALLOWED: true
+        SKIP_INSTALL: true
+
+  Slaptop:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Slaptop
+      - path: Shared
+      - path: Resources/Slaptop-icon.icon
+        buildPhase: resources
+      - path: Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist
+        buildPhase:
+          copyFiles:
+            destination: wrapper
+            subpath: Contents/Library/LaunchDaemons
+    dependencies:
+      - target: SlaptopSensorDaemon
+        embed: false
+      - sdk: ServiceManagement.framework
+    info:
+      path: Resources/Slaptop-Info.plist
+      properties:
+        CFBundleDisplayName: Slaptop
+        CFBundleName: Slaptop
+        CFBundleIdentifier: guru.am.slaptop
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "26"
+        CFBundleIconName: Slaptop-icon
+        LSUIElement: true
+        LSMinimumSystemVersion: "14.0"
+        NSHumanReadableCopyright: "Copyright © 2026 Kalani Helekunihi"
+        NSPrincipalClass: NSApplication
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: guru.am.slaptop
+        PRODUCT_NAME: Slaptop
+        ASSETCATALOG_COMPILER_APPICON_NAME: Slaptop-icon
+        SKIP_INSTALL: false
+    postBuildScripts:
+      - name: Embed Sensor Daemon
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          helper_source="${BUILT_PRODUCTS_DIR}/SlaptopSensorDaemon"
+          helper_destination="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SlaptopSensorDaemon"
+          /bin/mkdir -p "$(/usr/bin/dirname "${helper_destination}")"
+          /bin/cp "${helper_source}" "${helper_destination}"
+          if [ "${CONFIGURATION}" = "Release" ] && [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ] && [ "${EXPANDED_CODE_SIGN_IDENTITY}" != "-" ]; then
+            /usr/bin/codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY:--}" --identifier "guru.am.slaptop.sensor-daemon" --options runtime --timestamp "${helper_destination}"
+          else
+            /usr/bin/codesign --force --sign "${EXPANDED_CODE_SIGN_IDENTITY:--}" --identifier "guru.am.slaptop.sensor-daemon" "${helper_destination}"
+          fi
+        inputFiles:
+          - $(BUILT_PRODUCTS_DIR)/SlaptopSensorDaemon
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/SlaptopSensorDaemon
+    scheme:
+      testTargets:
+        - SlaptopTests
+      gatherCoverageData: true
+
+  SlaptopTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: SlaptopTests
+    dependencies:
+      - target: Slaptop
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: guru.am.slaptop.tests
+        GENERATE_INFOPLIST_FILE: true

@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#090a08">
+  <meta name="description" content="Slap/top turns display taps on an Apple Silicon Mac into direct Spaces and Mission Control actions. A modern revival of Kalani Helekunihi's 2005 utility, originally shared under the forum name projectle.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://slaptop.am.guru/">
+  <meta property="og:title" content="Slap/top — tap your Mac, move through Spaces">
+  <meta property="og:description" content="A wonderfully unnecessary macOS utility by Kalani Helekunihi, rebuilt for Apple silicon.">
+  <meta property="og:image" content="https://slaptop.am.guru/og.png?v=20260718-7">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="2400">
+  <meta property="og:image:height" content="1260">
+  <meta property="og:image:alt" content="Slap/top social card showing the slash wordmark and an outlined laptop with nine colorful Spaces.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Slap/top — tap your Mac, move through Spaces">
+  <meta name="twitter:description" content="A wonderfully unnecessary macOS utility by Kalani Helekunihi, rebuilt for Apple silicon.">
+  <meta name="twitter:image" content="https://slaptop.am.guru/og.png?v=20260718-7">
+  <title>Slap/top — Tap your Mac. Move through Spaces.</title>
+  <link rel="alternate" type="image/svg+xml" href="og.svg?v=20260718-7" title="Slap/top social card vector source">
+  <link rel="preload" as="image" href="mission-control.webp?v=20260718-4" type="image/webp">
+  <link rel="stylesheet" href="styles.css?v=20260718-11">
+  <script src="script.js?v=20260718-12" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a class="wordmark" href="#top" aria-label="Slap/top home">
+        <span>Slap</span><b aria-hidden="true">/</b><span>top</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#how">How it works</a>
+        <a href="#history">The story</a>
+        <a class="nav-download" href="https://github.com/AM-Guru/Slaptop/releases/latest" data-latest-dmg>
+          Download <span aria-hidden="true">↓</span>
+        </a>
+        <a class="nav-github" href="https://github.com/am-guru/Slaptop" target="_blank" rel="noopener noreferrer">
+          GitHub <span aria-hidden="true">↗</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-copy">
+        <div class="eyebrow reveal">A macOS utility with questionable physical inputs</div>
+        <h1 class="reveal">
+          Tap your Mac.<br>
+          <span>Move through Spaces.</span>
+        </h1>
+        <p class="hero-lede reveal">
+          Slap/top listens to your Mac’s motion sensor and turns display taps into direct Mission Control actions. Left switches left. Right switches right. Top launches Mission Control. Yes, really.
+        </p>
+        <div class="hero-actions reveal">
+          <a class="button button-primary" href="#demo">See the slap in action <span aria-hidden="true">↓</span></a>
+          <a class="button button-download" href="https://github.com/AM-Guru/Slaptop/releases/latest" data-latest-dmg>
+            Download <span aria-hidden="true">↓</span>
+          </a>
+          <a class="button button-secondary" href="https://github.com/am-guru/Slaptop" target="_blank" rel="noopener noreferrer">
+            View the source <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+        <div class="hero-meta reveal" aria-label="System requirements">
+          <span>macOS 14+</span>
+          <span>Apple silicon</span>
+          <span>Integrated display</span>
+        </div>
+      </div>
+
+      <div class="hero-orbit" aria-hidden="true">
+        <div class="orbit-ring"></div>
+        <span class="orbit-label orbit-label-one">TAP</span>
+        <span class="orbit-label orbit-label-two">SLIDE</span>
+        <span class="orbit-label orbit-label-three">REPEAT</span>
+      </div>
+    </section>
+
+    <div class="kinetic-strip" aria-hidden="true">
+      <div class="kinetic-track">
+        <span>SLAP LEFT&nbsp; → &nbsp;GO LEFT&nbsp; / &nbsp;SLAP RIGHT&nbsp; → &nbsp;GO RIGHT&nbsp; / &nbsp;</span>
+        <span>SLAP LEFT&nbsp; → &nbsp;GO LEFT&nbsp; / &nbsp;SLAP RIGHT&nbsp; → &nbsp;GO RIGHT&nbsp; / &nbsp;</span>
+      </div>
+    </div>
+
+    <section class="demo-section" id="demo">
+      <div class="section-heading reveal">
+        <span class="section-number">01 / THE GESTURE</span>
+        <h2>A tiny tap is all it takes.</h2>
+        <p>This browser edition of Slap/top’s <code>LaptopTapAnimationView</code> demonstrates its direct Spaces and Mission Control mappings.</p>
+      </div>
+
+      <div class="demo-shell reveal">
+        <div class="demo-topbar">
+          <div class="window-dots" aria-hidden="true"><i></i><i></i><i></i></div>
+          <span>ABOUT Slap/top</span>
+          <span class="live-badge"><i aria-hidden="true"></i> SENSOR SIMULATION DEMO</span>
+        </div>
+        <div class="demo-stage" role="group" aria-label="Interactive Slap/top demonstration with nine virtual Spaces and Mission Control">
+          <canvas id="tap-demo" aria-hidden="true"></canvas>
+          <button class="screen-tap-zone screen-tap-left" type="button" data-screen-tap="left" aria-label="Tap the left side of the display to switch one Space left"></button>
+          <button class="screen-tap-zone screen-tap-right" type="button" data-screen-tap="right" aria-label="Tap the right side of the display to switch one Space right"></button>
+          <button class="screen-tap-zone screen-tap-top" type="button" data-screen-tap="top" aria-label="Tap the top edge of the display to launch Mission Control"></button>
+          <div class="demo-fallback">Tap left to switch left. Tap right to switch right. Tap the top edge to launch Mission Control.</div>
+        </div>
+        <div class="demo-caption" aria-live="polite">
+          <div class="demo-status">
+            <span id="demo-caption">Space 5 of 9 · tap any side</span>
+            <div class="space-pagination" id="space-pagination" aria-hidden="true"></div>
+          </div>
+          <div class="phase-meter" aria-hidden="true"><i id="phase-meter-fill"></i></div>
+        </div>
+        <div class="demo-controls" aria-label="Try the Slap/top gesture">
+          <button class="demo-control demo-control-left" type="button" data-tap-side="left">
+            <span>Tap left side</span>
+            <strong><i aria-hidden="true">←</i> Switch Space: Left</strong>
+          </button>
+          <button class="demo-control demo-control-right" type="button" data-tap-side="right">
+            <span>Tap right side</span>
+            <strong>Switch Space: Right <i aria-hidden="true">→</i></strong>
+          </button>
+          <button class="demo-control demo-control-top" type="button" data-tap-side="top">
+            <span>Tap top edge</span>
+            <strong>Launch Mission Control <i aria-hidden="true">↑</i></strong>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="how-section" id="how">
+      <div class="section-heading reveal">
+        <span class="section-number">02 / UNDER THE PALM REST</span>
+        <h2>Motion in. Spaces out.</h2>
+        <p>Slap/top keeps the pipeline deliberately small. The sensor helper only reads motion reports; it contains no file or network access logic.</p>
+      </div>
+
+      <div class="signal-flow">
+        <article class="flow-card reveal">
+          <span class="flow-index">01</span>
+          <div class="flow-glyph sensor-glyph" aria-hidden="true"><i></i><i></i><i></i></div>
+          <h3>Sense the impact</h3>
+          <p>A narrowly scoped, user-approved helper reads accelerometer and gyroscope reports from the AppleSPU motion sensor.</p>
+        </article>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <article class="flow-card reveal">
+          <span class="flow-index">02</span>
+          <div class="flow-glyph classify-glyph" aria-hidden="true"><span>L</span><i></i><span>R</span></div>
+          <h3>Classify the side</h3>
+          <p>Three taps per edge teach Slap/top your Mac and your touch. Adjustable sensitivity and repeat timing keep the gesture intentional.</p>
+        </article>
+        <div class="flow-arrow" aria-hidden="true">→</div>
+        <article class="flow-card reveal">
+          <span class="flow-index">03</span>
+          <div class="flow-glyph spaces-glyph" aria-hidden="true"><i></i><i></i><i></i></div>
+          <h3>Switch the Space</h3>
+          <p>Slap/top performs direct managed-Space changes or launches Mission Control without generating keyboard or pointer events.</p>
+        </article>
+      </div>
+
+      <div class="mapping-card reveal">
+        <div>
+          <span class="mapping-label">LEFT-SIDE TAP</span>
+          <strong><i aria-hidden="true">←</i> CONTROL–LEFT</strong>
+        </div>
+        <div>
+          <span class="mapping-label">RIGHT-SIDE TAP</span>
+          <strong>CONTROL–RIGHT <i aria-hidden="true">→</i></strong>
+        </div>
+        <div>
+          <span class="mapping-label">TOP-EDGE TAP</span>
+          <strong>CONTROL–UP <i aria-hidden="true">↑</i></strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="history-section" id="history">
+      <div class="history-intro reveal">
+        <span class="section-number">03 / Slap/top, CIRCA 2005</span>
+        <h2>Slap/top hit the forums.<br><em>Then the drives spoke up.</em></h2>
+      </div>
+
+      <div class="timeline">
+        <article class="timeline-item reveal">
+          <div class="timeline-year">2005</div>
+          <div class="timeline-copy">
+            <h3>A forum-born experiment</h3>
+            <p>Kalani Helekunihi built the original <strong>Slap/top</strong> and shared it across macOS forums using the name <strong>projectle</strong>. It was a mischievous little experiment in turning physical motion into a software input.</p>
+          </div>
+        </article>
+
+        <article class="timeline-item timeline-warning reveal">
+          <div class="timeline-year">UH-OH</div>
+          <div class="timeline-copy">
+            <h3>The hard-drive problem</h3>
+            <p>User reports revealed a serious flaw: on a Mac with a spinning hard drive, a tap could look like a drop. The sudden-motion protection would park the drive heads—and repeated interruptions could lead to data corruption.</p>
+            <p class="pull-quote">“As it turns out, hitting a laptop with a hard drive kills your data.”</p>
+          </div>
+        </article>
+
+        <article class="timeline-item reveal">
+          <div class="timeline-year">OFFLINE</div>
+          <div class="timeline-copy">
+            <h3>The responsible move was to pull it</h3>
+            <p>Slap/top came down. When copies appeared under other names, Kalani contacted their authors about the same data-loss risk; they took those versions down too.</p>
+          </div>
+        </article>
+
+        <article class="timeline-item timeline-now reveal">
+          <div class="timeline-year">2026</div>
+          <div class="timeline-copy">
+            <h3>New silicon. No spinning platters.</h3>
+            <p>Two decades later, SSDs removed the head-parking failure mode that ended the original experiment. Slap/top returns as a native SwiftUI menu-bar app for modern Apple-silicon MacBooks.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="reality-check reveal" aria-labelledby="reality-heading">
+      <div class="reality-mark" aria-hidden="true">!</div>
+      <div>
+        <span class="section-number">A VERY SPECIFIC KIND OF PROGRESS</span>
+        <h2 id="reality-heading">This is still a laptop. Be nice to it.</h2>
+        <p>Slap/top is designed for light display taps on supported Apple Silicon Macs with integrated screens and SSD storage—not impacts, drops, or vintage Macs with spinning drives. Calibrate gently.</p>
+      </div>
+    </section>
+
+    <section class="open-section" id="source">
+      <div class="open-card reveal">
+        <span class="availability"><i aria-hidden="true"></i> PUBLIC &amp; OPEN SOURCE</span>
+        <h2>Open source,<br>with the whole strange story intact.</h2>
+        <p>The Slap/top app and this website are available for people to study, build on, and share with attribution. The code, implementation notes, and the whole strange story live together in the public repository.</p>
+        <a class="button button-dark" href="https://github.com/am-guru/Slaptop" target="_blank" rel="noopener noreferrer">
+          View Slap/top on GitHub <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+
+      <div class="requirements reveal">
+        <h3>What it needs</h3>
+        <dl>
+          <div><dt>Hardware</dt><dd>Apple Silicon Mac with an integrated screen</dd></div>
+          <div><dt>Sensor compatibility</dt><dd>Any Apple Silicon device with an integrated screen. MacBook, MacBook Air, MacBook Neo, MacBook Pro, iMac</dd></div>
+          <div><dt>System</dt><dd>macOS 14 or later</dd></div>
+          <div><dt>Permissions</dt><dd>Background Item approval</dd></div>
+          <div><dt>Distribution</dt><dd>Outside the Mac App Store</dd></div>
+        </dl>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-wordmark">Slap<span>/</span>top</div>
+    <p>Made by Kalani Helekunihi.<br>The AppleSPU report layout builds on MIT-licensed research from <a href="https://github.com/olvvier/apple-silicon-accelerometer" target="_blank" rel="noopener noreferrer">olvvier/apple-silicon-accelerometer</a>.</p>
+    <div class="footer-links">
+      <a href="https://github.com/am-guru/Slaptop" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+      <a href="https://x.com/kalanimakutu" target="_blank" rel="noopener noreferrer" aria-label="Kalani Helekunihi on X">X / Twitter ↗</a>
+      <a href="#top">Back to top ↑</a>
+    </div>
+  </footer>
+</body>
+</html>

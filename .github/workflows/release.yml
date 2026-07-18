@@ -1,0 +1,109 @@
+name: Build notarized macOS release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: slaptop-main-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: >-
+      github.repository == 'AM-Guru/Slaptop' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      github.ref_type == 'branch'
+    name: Sign, notarize, and release Slaptop
+    runs-on:
+      group: slaptop-main-release
+      labels: [self-hosted, macOS, macos-build, xcode]
+    environment: slaptop-release
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      DEVELOPER_ID_APPLICATION: ${{ vars.DEVELOPER_ID_APPLICATION }}
+
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate runner and protected configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required=(
+            DEVELOPER_DIR
+            APPLE_TEAM_ID
+            DEVELOPER_ID_APPLICATION
+          )
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required GitHub Actions configuration: ${name}" >&2
+              exit 1
+            fi
+          done
+
+          [[ "$(uname -s)" == "Darwin" ]]
+          [[ -x "${DEVELOPER_DIR}/usr/bin/xcodebuild" ]]
+          command -v security >/dev/null
+          command -v codesign >/dev/null
+          command -v hdiutil >/dev/null
+          command -v gh >/dev/null
+
+      - name: Ensure XcodeGen is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null; then
+            command -v brew >/dev/null
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Validate release identity and project configuration
+        shell: bash
+        env:
+          DEVELOPER_ID_P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: Scripts/validate-release-configuration.sh
+
+      - name: Build, sign, notarize, and package
+        id: package
+        shell: bash
+        env:
+          DEVELOPER_ID_P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
+          DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
+          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: Scripts/ci-release.sh
+
+      - name: Publish GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.package.outputs.release_tag }}
+          RELEASE_TITLE: ${{ steps.package.outputs.release_title }}
+        run: |
+          set -euo pipefail
+          [[ -f Slaptop.dmg ]]
+          gh release create "${RELEASE_TAG}" \
+            "Slaptop.dmg#Slaptop.dmg" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --target "${GITHUB_SHA}" \
+            --title "${RELEASE_TITLE}" \
+            --generate-notes

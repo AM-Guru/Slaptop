@@ -1,0 +1,85 @@
+# macOS metadata
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Xcode user state and intermediate products
+DerivedData/
+build/
+Build/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+*.moved-aside
+*.hmap
+*.ipa
+*.app
+*.dSYM
+*.dSYM.zip
+*.xcarchive
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+
+# Swift Package Manager and generated tooling state
+.build/
+.swiftpm/
+Package.resolved.local
+
+# Distribution and packaging output
+dist/
+artifacts/
+release/
+*.dmg
+*.pkg
+*.zip
+
+# JavaScript/web dependencies, builds, and test output
+node_modules/
+.vite/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+coverage/
+website/.cache/
+website/.tmp/
+
+# Environment files, credentials, and signing material
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.secrets/
+secrets.*
+credentials.*
+private/
+*.p12
+*.pfx
+*.cer
+*.crt
+*.der
+*.key
+*.pem
+*.p8
+*.mobileprovision
+*.provisionprofile
+AuthKey_*.p8
+
+# Logs, caches, editor state, and temporary files
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.cache/
+.tmp/
+tmp/
+temp/
+.idea/
+.vscode/

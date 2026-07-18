@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+  <title id="title">Slap/Top app icon — Background</title>
+  <desc id="description">The background layer from the Slap/Top macOS app icon, aligned on a transparent 1024 by 1024 canvas.</desc>
+  <defs>
+    <linearGradient id="background" x1="144" y1="112" x2="880" y2="920" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20231d"/>
+      <stop offset="0.48" stop-color="#0b0d09"/>
+      <stop offset="1" stop-color="#050604"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="270" y1="284" x2="770" y2="692" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6542df"/>
+      <stop offset="0.5" stop-color="#2b1769"/>
+      <stop offset="1" stop-color="#100a24"/>
+    </linearGradient>
+    <linearGradient id="screenSheen" x1="304" y1="330" x2="738" y2="614" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="188" y1="722" x2="836" y2="814" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#73776e"/>
+      <stop offset="0.18" stop-color="#f1efe8"/>
+      <stop offset="0.5" stop-color="#8b8f85"/>
+      <stop offset="0.82" stop-color="#f1efe8"/>
+      <stop offset="1" stop-color="#666a62"/>
+    </linearGradient>
+    <linearGradient id="slash" x1="590" y1="338" x2="442" y2="664" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e0ff78"/>
+      <stop offset="0.48" stop-color="#c8ff2f"/>
+      <stop offset="1" stop-color="#8ab800"/>
+    </linearGradient>
+    <radialGradient id="violetHalo" cx="50%" cy="48%" r="50%">
+      <stop stop-color="#8d68ff" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#8d68ff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" fill="none" stroke="#f1efe8" stroke-opacity="0.035" stroke-width="2"/>
+    </pattern>
+    <clipPath id="screenClip">
+      <rect x="218" y="242" width="588" height="436" rx="58"/>
+    </clipPath>
+  </defs>
+  <g id="background-layer">
+    <rect x="52" y="52" width="920" height="920" rx="224" fill="url(#background)"/>
+    <rect x="53" y="53" width="918" height="918" rx="223" fill="none" stroke="#f1efe8" stroke-opacity="0.14" stroke-width="2"/>
+    <rect x="72" y="72" width="880" height="880" rx="204" fill="url(#grid)"/>
+    <circle cx="512" cy="500" r="402" fill="url(#violetHalo)"/>
+  </g>
+</svg>

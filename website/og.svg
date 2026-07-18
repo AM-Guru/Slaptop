@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1260" viewBox="0 0 2400 1260" role="img" aria-labelledby="title description">
+  <title id="title">Slap/top — tap your Mac, move through Spaces</title>
+  <desc id="description">A dark technical poster with the Slap/top wordmark and an outlined laptop showing nine colorful macOS Spaces.</desc>
+  <defs>
+    <linearGradient id="purplePanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5427d5"/>
+      <stop offset="0.55" stop-color="#281060"/>
+      <stop offset="1" stop-color="#090712"/>
+    </linearGradient>
+    <linearGradient id="acidPanel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d8ff62"/>
+      <stop offset="0.54" stop-color="#87b800"/>
+      <stop offset="1" stop-color="#121a05"/>
+    </linearGradient>
+    <linearGradient id="violetLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#8d68ff" stop-opacity="0"/>
+      <stop offset="0.45" stop-color="#8d68ff"/>
+      <stop offset="1" stop-color="#8d68ff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="baseLine" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5f615d"/>
+      <stop offset="0.5" stop-color="#f1efe8"/>
+      <stop offset="1" stop-color="#5f615d"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#8d68ff" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#8d68ff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="microGrid" width="56" height="56" patternUnits="userSpaceOnUse">
+      <path d="M56 0H0V56" fill="none" stroke="#f1efe8" stroke-opacity="0.028" stroke-width="2"/>
+    </pattern>
+    <pattern id="dotField" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="2" fill="#8d68ff" fill-opacity="0.48"/>
+    </pattern>
+    <filter id="acidGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="11" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feDropShadow dx="0" dy="28" stdDeviation="28" flood-color="#000" flood-opacity="0.78"/>
+    </filter>
+    <clipPath id="screenClip">
+      <rect x="1122" y="244" width="1120" height="646" rx="14"/>
+    </clipPath>
+  </defs>
+
+  <rect width="2400" height="1260" fill="#060705"/>
+  <rect width="2400" height="1260" fill="url(#microGrid)"/>
+  <ellipse cx="1780" cy="760" rx="770" ry="520" fill="url(#glow)"/>
+
+  <g fill="none" stroke="#8d68ff" stroke-width="2" opacity="0.62">
+    <path d="M54 60H646" stroke-dasharray="18 7 3 7"/>
+    <path d="M54 60V238" stroke-dasharray="18 7 3 7"/>
+    <path d="M2078 60H2344V254" stroke-dasharray="18 10"/>
+    <path d="M2210 48V184M2254 48V184M2298 48V184M2342 48V184" opacity="0.55"/>
+    <path d="M2078 76H2360M2078 120H2360M2078 164H2360" opacity="0.55"/>
+  </g>
+  <g stroke="#c8ff2f" stroke-width="3">
+    <path d="M34 60H74M54 40V80"/>
+    <path d="M42 1070H84M63 1049V1091"/>
+  </g>
+
+  <g font-family="Arial Narrow, DIN Condensed, Impact, sans-serif">
+    <text x="88" y="132" fill="#c8ff2f" font-size="35" font-weight="700" letter-spacing="8">A MACOS UTILITY WITH QUESTIONABLE PHYSICAL INPUTS</text>
+    <text x="82" y="590" fill="#f1efe8" font-family="Impact, DIN Condensed, Arial Narrow, sans-serif" font-size="230" letter-spacing="-5">Slap</text>
+    <text x="479" y="590" fill="#c8ff2f" font-family="Impact, DIN Condensed, Arial Narrow, sans-serif" font-size="230" letter-spacing="-5">/</text>
+    <text x="565" y="590" fill="#f1efe8" font-family="Impact, DIN Condensed, Arial Narrow, sans-serif" font-size="230" letter-spacing="-5">top</text>
+    <rect x="88" y="654" width="902" height="4" fill="url(#violetLine)"/>
+    <rect x="818" y="645" width="112" height="15" rx="7" fill="#8d68ff"/>
+    <g font-family="DIN Condensed, Arial Narrow, Impact, sans-serif" font-weight="700">
+      <text x="88" y="782" fill="#c8ff2f" font-size="102" letter-spacing="-1">TAP YOUR MAC.</text>
+      <text x="88" y="896" fill="#8d68ff" font-size="102" letter-spacing="-1">MOVE THROUGH SPACES.</text>
+    </g>
+    <text x="92" y="988" fill="#858880" font-size="27" font-weight="700" letter-spacing="6">INFINITE SPACES  /  3 GESTURES</text>
+  </g>
+
+  <g transform="translate(1060 650)" fill="none" stroke="#c8ff2f" stroke-width="3" opacity="0.9">
+    <circle r="16" fill="#c8ff2f" filter="url(#acidGlow)"/>
+    <circle r="44" stroke-dasharray="18 9"/>
+    <circle r="78" stroke-dasharray="28 12"/>
+    <circle r="112" stroke-dasharray="35 16" opacity="0.56"/>
+    <path d="M-128 0H128M0-128V128" opacity="0.48"/>
+    <path d="M-18-142L-78-258M-42-125L-124-204M18-142L48-248"/>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="1080" y="176" width="1200" height="774" rx="48" fill="#070806" stroke="#f1efe8" stroke-width="7"/>
+    <rect x="1122" y="244" width="1120" height="646" rx="14" fill="#080908" stroke="#b7b8b3" stroke-width="3"/>
+    <circle cx="1680" cy="211" r="6" fill="none" stroke="#f1efe8" stroke-width="2"/>
+
+    <g clip-path="url(#screenClip)">
+      <rect x="1122" y="244" width="1120" height="646" fill="#070807"/>
+      <rect x="1122" y="244" width="1120" height="646" fill="url(#microGrid)" opacity="0.8"/>
+
+      <g transform="translate(1150 266)">
+        <g stroke="#f1efe8" stroke-opacity="0.18" stroke-width="2">
+          <rect width="102" height="58" rx="7" fill="#154bd8"/>
+          <rect x="116" width="102" height="58" rx="7" fill="#7d38ef"/>
+          <rect x="232" width="102" height="58" rx="7" fill="#ff6a2b"/>
+          <rect x="348" width="102" height="58" rx="7" fill="#29c9e6"/>
+          <rect x="464" width="102" height="58" rx="7" fill="#281060" stroke="#c8ff2f" stroke-width="5" filter="url(#acidGlow)"/>
+          <rect x="580" width="102" height="58" rx="7" fill="#ec2896"/>
+          <rect x="696" width="102" height="58" rx="7" fill="#18b8a8"/>
+          <rect x="812" width="102" height="58" rx="7" fill="#e99320"/>
+          <rect x="928" width="102" height="58" rx="7" fill="#327df4"/>
+        </g>
+        <rect x="497" y="67" width="36" height="5" rx="2.5" fill="#c8ff2f"/>
+      </g>
+
+      <g transform="translate(1192 374) rotate(-3 360 220)">
+        <rect width="700" height="420" rx="18" fill="url(#purplePanel)" stroke="#8d68ff" stroke-width="4"/>
+        <rect x="28" y="26" width="644" height="56" rx="9" fill="#0b0a13" fill-opacity="0.82"/>
+        <circle cx="57" cy="54" r="7" fill="#8d68ff"/>
+        <circle cx="82" cy="54" r="7" fill="#59545f"/>
+        <circle cx="107" cy="54" r="7" fill="#59545f"/>
+        <path d="M-20 350C118 204 230 195 344 305S555 392 734 164V452H-20Z" fill="#8d68ff" fill-opacity="0.74"/>
+        <path d="M-20 392C151 278 240 266 364 353S574 408 734 260V452H-20Z" fill="#3e20a5"/>
+        <g fill="#f1efe8" opacity="0.28">
+          <rect x="34" y="378" width="18" height="18" rx="5"/>
+          <rect x="63" y="378" width="18" height="18" rx="5"/>
+          <rect x="92" y="378" width="18" height="18" rx="5"/>
+          <rect x="121" y="378" width="18" height="18" rx="5"/>
+          <rect x="150" y="378" width="18" height="18" rx="5"/>
+          <rect x="179" y="378" width="18" height="18" rx="5"/>
+          <rect x="208" y="378" width="18" height="18" rx="5"/>
+          <rect x="237" y="378" width="18" height="18" rx="5"/>
+          <rect x="266" y="378" width="18" height="18" rx="5"/>
+        </g>
+        <rect x="34" y="378" width="18" height="18" rx="5" fill="#8d68ff" opacity="1"/>
+      </g>
+
+      <g transform="translate(1768 388) rotate(3 260 205)">
+        <rect width="520" height="404" rx="18" fill="url(#acidPanel)" stroke="#f1efe8" stroke-opacity="0.72" stroke-width="4"/>
+        <rect x="24" y="24" width="472" height="52" rx="8" fill="#101606" fill-opacity="0.83"/>
+        <circle cx="52" cy="50" r="7" fill="#c8ff2f"/>
+        <circle cx="77" cy="50" r="7" fill="#51564a"/>
+        <circle cx="102" cy="50" r="7" fill="#51564a"/>
+        <path d="M-20 318C98 226 180 273 272 220S411 98 548 182V428H-20Z" fill="#c8ff2f" fill-opacity="0.9"/>
+        <path d="M-20 390C132 280 202 321 298 278S422 244 548 338V428H-20Z" fill="#5b7c00"/>
+        <path d="M-10 320C100 260 199 216 536 190" fill="none" stroke="#f1efe8" stroke-opacity="0.5" stroke-width="3"/>
+        <g fill="#f1efe8" opacity="0.28">
+          <rect x="28" y="362" width="18" height="18" rx="5"/>
+          <rect x="57" y="362" width="18" height="18" rx="5"/>
+          <rect x="86" y="362" width="18" height="18" rx="5"/>
+          <rect x="115" y="362" width="18" height="18" rx="5"/>
+          <rect x="144" y="362" width="18" height="18" rx="5"/>
+          <rect x="173" y="362" width="18" height="18" rx="5"/>
+          <rect x="202" y="362" width="18" height="18" rx="5"/>
+          <rect x="231" y="362" width="18" height="18" rx="5"/>
+          <rect x="260" y="362" width="18" height="18" rx="5"/>
+        </g>
+        <rect x="144" y="362" width="18" height="18" rx="5" fill="#c8ff2f" opacity="1"/>
+      </g>
+    </g>
+
+    <path d="M1050 976H2310L2380 1082Q2390 1100 2362 1104H998Q970 1100 980 1082Z" fill="#070806" stroke="url(#baseLine)" stroke-width="7"/>
+    <path d="M1120 991H2240L2285 1056H1074Z" fill="none" stroke="#8c8e88" stroke-width="3"/>
+    <path d="M1585 1081H1775L1757 1109Q1750 1118 1730 1118H1630Q1610 1118 1603 1109Z" fill="#070806" stroke="#f1efe8" stroke-width="3"/>
+  </g>
+
+  <rect x="42" y="1088" width="990" height="3" fill="url(#violetLine)"/>
+  <rect x="42" y="1148" width="880" height="116" fill="url(#dotField)" opacity="0.62"/>
+  <g transform="translate(2310 1168)" fill="none" stroke="#8d68ff" stroke-width="3">
+    <circle r="20"/>
+    <circle r="38" opacity="0.5"/>
+    <path d="M-54 0H54M0-54V54"/>
+  </g>
+</svg>
