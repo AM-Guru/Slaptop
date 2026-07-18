@@ -48,7 +48,6 @@ gh api --method PATCH "orgs/AM-Guru/actions/runner-groups/${group_id}" \
   -f visibility='selected' \
   -F allows_public_repositories=true \
   -F restricted_to_workflows=true \
-  -F "selected_repository_ids[]=${repository_id}" \
   -f "selected_workflows[]=${WORKFLOW}" >/dev/null
 gh api --method PUT \
   "orgs/AM-Guru/actions/runner-groups/${group_id}/repositories/${repository_id}" >/dev/null
