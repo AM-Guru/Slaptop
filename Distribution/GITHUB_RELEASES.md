@@ -33,12 +33,16 @@ The current sensor implementation uses a privileged launch daemon and a private 
 
 ## Protected GitHub configuration
 
-Private keys, the certificate password, and App Store Connect credentials must be repository **Secrets**, never repository Variables or committed files. The workflow requires these secret names:
+Private keys, certificate passwords, and App Store Connect credentials must be repository **Secrets**, never repository Variables or committed files. The workflow requires these secret names:
 
 | Secret | Value |
 | --- | --- |
 | `DEVELOPER_ID_P12_BASE64` | Base64-encoded PKCS#12 export containing `Developer ID Application: AM Guru, LLC (59A594LZGR)` and its private key |
 | `DEVELOPER_ID_P12_PASSWORD` | Password protecting that PKCS#12 export |
+| `APP_STORE_DEVELOPMENT_P12_BASE64` | Base64-encoded PKCS#12 export containing the dedicated `Apple Development: Created via API (AHG2S22W82)` identity and its private key |
+| `APP_STORE_DEVELOPMENT_P12_PASSWORD` | Password protecting the Apple Development PKCS#12 export |
+| `APP_STORE_DISTRIBUTION_P12_BASE64` | Base64-encoded PKCS#12 export containing `Apple Distribution: AM Guru, LLC (59A594LZGR)` and its private key |
+| `APP_STORE_DISTRIBUTION_P12_PASSWORD` | Password protecting the Apple Distribution PKCS#12 export |
 | `APP_STORE_CONNECT_PRIVATE_KEY_BASE64` | Base64-encoded App Store Connect API `.p8` key used by `notarytool` |
 | `APP_STORE_CONNECT_KEY_ID` | App Store Connect API key ID |
 | `APP_STORE_CONNECT_ISSUER_ID` | App Store Connect API issuer ID |
@@ -49,6 +53,8 @@ Configure these non-sensitive repository **Variables**:
 | --- | --- |
 | `APPLE_TEAM_ID` | `59A594LZGR` |
 | `DEVELOPER_ID_APPLICATION` | `Developer ID Application: AM Guru, LLC (59A594LZGR)` |
+| `APP_STORE_DEVELOPMENT` | `Apple Development: Created via API (AHG2S22W82)` |
+| `APP_STORE_DISTRIBUTION` | `Apple Distribution: AM Guru, LLC (59A594LZGR)` |
 | `XCODE_DEVELOPER_DIR` | The selected Xcode path on the `macos-build` runner, such as `/Applications/Xcode-beta.app/Contents/Developer` |
 
 Repository administrators can configure values without printing them:
@@ -59,17 +65,29 @@ read -rs P12_PASSWORD
 printf '%s' "$P12_PASSWORD" | gh secret set DEVELOPER_ID_P12_PASSWORD --repo AM-Guru/Slaptop
 unset P12_PASSWORD
 
+base64 < AppleDevelopment.p12 | gh secret set APP_STORE_DEVELOPMENT_P12_BASE64 --repo AM-Guru/Slaptop
+read -rs APP_STORE_DEVELOPMENT_P12_PASSWORD
+printf '%s' "$APP_STORE_DEVELOPMENT_P12_PASSWORD" | gh secret set APP_STORE_DEVELOPMENT_P12_PASSWORD --repo AM-Guru/Slaptop
+unset APP_STORE_DEVELOPMENT_P12_PASSWORD
+
+base64 < AppleDistribution.p12 | gh secret set APP_STORE_DISTRIBUTION_P12_BASE64 --repo AM-Guru/Slaptop
+read -rs APP_STORE_P12_PASSWORD
+printf '%s' "$APP_STORE_P12_PASSWORD" | gh secret set APP_STORE_DISTRIBUTION_P12_PASSWORD --repo AM-Guru/Slaptop
+unset APP_STORE_P12_PASSWORD
+
 base64 < AuthKey_KEYID.p8 | gh secret set APP_STORE_CONNECT_PRIVATE_KEY_BASE64 --repo AM-Guru/Slaptop
 printf '%s' 'KEY_ID' | gh secret set APP_STORE_CONNECT_KEY_ID --repo AM-Guru/Slaptop
 printf '%s' 'ISSUER_ID' | gh secret set APP_STORE_CONNECT_ISSUER_ID --repo AM-Guru/Slaptop
 
 gh variable set APPLE_TEAM_ID --body '59A594LZGR' --repo AM-Guru/Slaptop
 gh variable set DEVELOPER_ID_APPLICATION --body 'Developer ID Application: AM Guru, LLC (59A594LZGR)' --repo AM-Guru/Slaptop
+gh variable set APP_STORE_DEVELOPMENT --body 'Apple Development: Created via API (AHG2S22W82)' --repo AM-Guru/Slaptop
+gh variable set APP_STORE_DISTRIBUTION --body 'Apple Distribution: AM Guru, LLC (59A594LZGR)' --repo AM-Guru/Slaptop
 gh variable set XCODE_DEVELOPER_DIR --body '/Applications/Xcode-beta.app/Contents/Developer' --repo AM-Guru/Slaptop
 ```
 
-The signing certificate and API key are decoded only beneath `RUNNER_TEMP`. The job imports the certificate into a temporary keychain and deletes that keychain and all credential files on success, failure, cancellation, or timeout cleanup.
+The signing certificates and API key are decoded only beneath `RUNNER_TEMP`. Each signing step imports its certificate into a temporary keychain and deletes that keychain and all credential files on success, failure, cancellation, or timeout cleanup.
 
-`Scripts/ci-app-store-qa.sh` uses the same App Store Connect key with Xcode’s `-allowProvisioningUpdates` authentication flow. Xcode manages the App Store signing certificate and provisioning profile for the archive, uploads it with the `app-store-connect` export method, and deletes its temporary archive and key material when the step completes or fails.
+`Scripts/ci-app-store-qa.sh` imports dedicated Apple Development and Apple Distribution identities into an isolated keychain. Xcode uses the development identity for its automatic archive and the distribution identity or cloud signing for export. The script uses the App Store Connect key with Xcode’s `-allowProvisioningUpdates` authentication flow to manage the provisioning profile and upload with the `app-store-connect` export method, then deletes its temporary keychain, archive, and key material when the step completes or fails.
 
-Before any build starts, `Scripts/validate-release-configuration.sh` verifies that the job is a `push` of the fetched `main` tip in `AM-Guru/Slaptop`, regenerates an isolated Xcode project, checks all three bundle IDs, the AM Guru team ID, signing style, ARM64 architecture, hardened runtime, launch daemon identifiers, and distribution plists, then validates the Developer ID certificate and App Store Connect private key without printing credential contents. Any changed bundle ID, team, identity, signing data, branch, repository, or event fails the job before compilation.
+Before any build starts, `Scripts/validate-release-configuration.sh` verifies that the job is a `push` of the fetched `main` tip in `AM-Guru/Slaptop`, regenerates an isolated Xcode project, checks all three bundle IDs, the AM Guru team ID, signing style, ARM64 architecture, hardened runtime, launch daemon identifiers, and distribution plists, then validates all three signing certificates and the App Store Connect private key without printing credential contents. Any changed bundle ID, team, identity, signing data, branch, repository, or event fails the job before compilation.

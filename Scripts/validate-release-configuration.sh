@@ -7,6 +7,8 @@ readonly EXPECTED_REPOSITORY="AM-Guru/Slaptop"
 readonly EXPECTED_REF="refs/heads/main"
 readonly EXPECTED_TEAM_ID="59A594LZGR"
 readonly EXPECTED_DEVELOPER_ID="Developer ID Application: AM Guru, LLC (59A594LZGR)"
+readonly EXPECTED_APP_STORE_DEVELOPMENT="Apple Development: Created via API (AHG2S22W82)"
+readonly EXPECTED_APP_STORE_DISTRIBUTION="Apple Distribution: AM Guru, LLC (59A594LZGR)"
 readonly EXPECTED_APP_BUNDLE_ID="guru.am.slaptop"
 readonly EXPECTED_HELPER_BUNDLE_ID="guru.am.slaptop.sensor-daemon"
 readonly EXPECTED_TEST_BUNDLE_ID="guru.am.slaptop.tests"
@@ -57,6 +59,12 @@ for name in \
   DEVELOPER_ID_APPLICATION \
   DEVELOPER_ID_P12_BASE64 \
   DEVELOPER_ID_P12_PASSWORD \
+  APP_STORE_DEVELOPMENT \
+  APP_STORE_DEVELOPMENT_P12_BASE64 \
+  APP_STORE_DEVELOPMENT_P12_PASSWORD \
+  APP_STORE_DISTRIBUTION \
+  APP_STORE_DISTRIBUTION_P12_BASE64 \
+  APP_STORE_DISTRIBUTION_P12_PASSWORD \
   APP_STORE_CONNECT_PRIVATE_KEY_BASE64 \
   APP_STORE_CONNECT_KEY_ID \
   APP_STORE_CONNECT_ISSUER_ID; do
@@ -71,6 +79,14 @@ expect_equal "ref name" "${GITHUB_REF_NAME}" "main"
 expect_equal "ref type" "${GITHUB_REF_TYPE}" "branch"
 expect_equal "Apple team" "${APPLE_TEAM_ID}" "${EXPECTED_TEAM_ID}"
 expect_equal "Developer ID identity" "${DEVELOPER_ID_APPLICATION}" "${EXPECTED_DEVELOPER_ID}"
+expect_equal \
+  "App Store development identity" \
+  "${APP_STORE_DEVELOPMENT}" \
+  "${EXPECTED_APP_STORE_DEVELOPMENT}"
+expect_equal \
+  "App Store distribution identity" \
+  "${APP_STORE_DISTRIBUTION}" \
+  "${EXPECTED_APP_STORE_DISTRIBUTION}"
 
 [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]] || fail "GITHUB_SHA is not a full commit SHA"
 [[ -z "${GITHUB_HEAD_REF:-}" ]] || fail "pull-request head refs may not use the release runner"
@@ -209,6 +225,74 @@ certificate_subject="$(
 [[ "${certificate_subject}" =~ OU[[:space:]]*=[[:space:]]*${EXPECTED_TEAM_ID} ]] \
   || fail "Developer ID certificate team does not match the protected team"
 
+printf '%s' "${APP_STORE_DEVELOPMENT_P12_BASE64}" | /usr/bin/base64 -D \
+  > "${VALIDATION_DIR}/apple-development.p12" \
+  || fail "Apple Development PKCS#12 is not valid base64"
+P12_VALIDATION_PASSWORD="${APP_STORE_DEVELOPMENT_P12_PASSWORD}" \
+  /usr/bin/openssl pkcs12 \
+    -in "${VALIDATION_DIR}/apple-development.p12" \
+    -passin env:P12_VALIDATION_PASSWORD \
+    -clcerts \
+    -nokeys \
+    -out "${VALIDATION_DIR}/apple-development-cert.pem" >/dev/null 2>&1 \
+  || fail "Apple Development PKCS#12 or its password is invalid"
+development_subject="$(
+  /usr/bin/openssl x509 \
+    -in "${VALIDATION_DIR}/apple-development-cert.pem" \
+    -noout \
+    -subject
+)"
+[[ "${development_subject}" == *"${EXPECTED_APP_STORE_DEVELOPMENT}"* ]] \
+  || fail "Apple Development certificate common name is not the protected identity"
+[[ "${development_subject}" =~ OU[[:space:]]*=[[:space:]]*${EXPECTED_TEAM_ID} ]] \
+  || fail "Apple Development certificate team does not match the protected team"
+P12_VALIDATION_PASSWORD="${APP_STORE_DEVELOPMENT_P12_PASSWORD}" \
+  /usr/bin/openssl pkcs12 \
+    -in "${VALIDATION_DIR}/apple-development.p12" \
+    -passin env:P12_VALIDATION_PASSWORD \
+    -nocerts \
+    -nodes \
+    -out "${VALIDATION_DIR}/apple-development-key.pem" >/dev/null 2>&1 \
+  || fail "Apple Development PKCS#12 does not contain an accessible private key"
+/usr/bin/openssl pkey \
+  -in "${VALIDATION_DIR}/apple-development-key.pem" \
+  -noout >/dev/null 2>&1 \
+  || fail "Apple Development PKCS#12 private key is invalid"
+
+printf '%s' "${APP_STORE_DISTRIBUTION_P12_BASE64}" | /usr/bin/base64 -D \
+  > "${VALIDATION_DIR}/apple-distribution.p12" \
+  || fail "Apple Distribution PKCS#12 is not valid base64"
+P12_VALIDATION_PASSWORD="${APP_STORE_DISTRIBUTION_P12_PASSWORD}" \
+  /usr/bin/openssl pkcs12 \
+    -in "${VALIDATION_DIR}/apple-distribution.p12" \
+    -passin env:P12_VALIDATION_PASSWORD \
+    -clcerts \
+    -nokeys \
+    -out "${VALIDATION_DIR}/apple-distribution-cert.pem" >/dev/null 2>&1 \
+  || fail "Apple Distribution PKCS#12 or its password is invalid"
+distribution_subject="$(
+  /usr/bin/openssl x509 \
+    -in "${VALIDATION_DIR}/apple-distribution-cert.pem" \
+    -noout \
+    -subject
+)"
+[[ "${distribution_subject}" == *"${EXPECTED_APP_STORE_DISTRIBUTION}"* ]] \
+  || fail "Apple Distribution certificate common name is not the protected identity"
+[[ "${distribution_subject}" =~ OU[[:space:]]*=[[:space:]]*${EXPECTED_TEAM_ID} ]] \
+  || fail "Apple Distribution certificate team does not match the protected team"
+P12_VALIDATION_PASSWORD="${APP_STORE_DISTRIBUTION_P12_PASSWORD}" \
+  /usr/bin/openssl pkcs12 \
+    -in "${VALIDATION_DIR}/apple-distribution.p12" \
+    -passin env:P12_VALIDATION_PASSWORD \
+    -nocerts \
+    -nodes \
+    -out "${VALIDATION_DIR}/apple-distribution-key.pem" >/dev/null 2>&1 \
+  || fail "Apple Distribution PKCS#12 does not contain an accessible private key"
+/usr/bin/openssl pkey \
+  -in "${VALIDATION_DIR}/apple-distribution-key.pem" \
+  -noout >/dev/null 2>&1 \
+  || fail "Apple Distribution PKCS#12 private key is invalid"
+
 printf '%s' "${APP_STORE_CONNECT_PRIVATE_KEY_BASE64}" | /usr/bin/base64 -D \
   > "${VALIDATION_DIR}/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8" \
   || fail "App Store Connect key is not valid base64"
@@ -221,4 +305,4 @@ printf '%s' "${APP_STORE_CONNECT_PRIVATE_KEY_BASE64}" | /usr/bin/base64 -D \
 [[ "${APP_STORE_CONNECT_ISSUER_ID}" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] \
   || fail "App Store Connect issuer ID has an unexpected format"
 
-echo "Release repository, ref, bundle IDs, team, certificate, and notarization key are valid."
+echo "Release repository, ref, bundle IDs, team, certificates, and notarization key are valid."
