@@ -306,14 +306,23 @@ final class SPUHIDMotionSensor {
 
     private func handleReport(kind: SensorKind, report: UnsafeMutablePointer<UInt8>?, length: CFIndex) {
         guard let report else { return }
+        // Logging state is guarded because start() can reset it from another
+        // thread if a previous sensor thread outlived its 2-second exit wait.
         guard length == Self.reportLength else {
-            if unexpectedReportLengths.insert(length).inserted {
+            let isNewLength = stateLock.withLock {
+                unexpectedReportLengths.insert(length).inserted
+            }
+            if isNewLength {
                 NSLog("Slaptop ignored an unexpected AppleSPU report length: %d bytes", length)
             }
             return
         }
-        if !hasLoggedFirstReport {
+        let isFirstReport = stateLock.withLock { () -> Bool in
+            guard !hasLoggedFirstReport else { return false }
             hasLoggedFirstReport = true
+            return true
+        }
+        if isFirstReport {
             NSLog("Slaptop received its first valid AppleSPU motion report.")
         }
         let vector = SensorVector(

@@ -114,21 +114,26 @@ final class SensorServiceController {
             completion(.success(()))
             return
         }
+        reinstallService(completion: completion)
+    }
 
+    /// Forces a full unregister → register cycle. A plain register() over an
+    /// existing registration does not update Background Task Management's
+    /// recorded code identity, so after the daemon binary changes launchd
+    /// kills every new spawn with a launch-constraint violation until the
+    /// registration is rebuilt from scratch.
+    func reinstallService(completion: @escaping (Result<Void, Error>) -> Void) {
         disconnect()
-        appService.unregister { [weak self] error in
+        appService.unregister { [weak self] _ in
+            // Unregister errors are ignored deliberately: the service may not
+            // be registered at all, and register() below is the fix either way.
             guard let self else { return }
-            if let error {
-                completion(.failure(error))
-                return
-            }
-
             Self.clearStoredRegistrationFingerprint()
 
             // Service Management can return EPERM when register() immediately
-            // follows a successful daemon unregister. Apple DTS recommends
-            // returning to the run loop; affected macOS releases also need a
-            // short delay for Background Task Management to finish cleanup.
+            // follows a daemon unregister. Apple DTS recommends returning to
+            // the run loop; affected macOS releases also need a short delay
+            // for Background Task Management to finish cleanup.
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
                 guard let self else { return }
                 do {
@@ -145,23 +150,53 @@ final class SensorServiceController {
         SMAppService.openSystemSettingsLoginItems()
     }
 
+    /// Distinguishes the daemon answering with a failure from the daemon not
+    /// answering at all — the latter usually means launchd cannot spawn it
+    /// (for example after a launch-constraint violation) and the registration
+    /// needs to be reinstalled.
+    enum StartResult {
+        case running(message: String)
+        case daemonRefused(message: String)
+        case unreachable(message: String)
+    }
+
+    private static let startReplyTimeout: TimeInterval = 8
+
     func start(
         sensitivity: Double,
         minimumTapInterval: Double,
-        completion: @escaping (Bool, String) -> Void
+        completion: @escaping (StartResult) -> Void
     ) {
         let connection = makeConnectionIfNeeded()
+
+        // The reply, the proxy error handler, and the timeout race; only the
+        // first outcome is delivered.
+        let finishLock = NSLock()
+        var finished = false
+        let finish: (StartResult) -> Void = { result in
+            let shouldDeliver = finishLock.withLock { () -> Bool in
+                guard !finished else { return false }
+                finished = true
+                return true
+            }
+            if shouldDeliver { completion(result) }
+        }
+
         guard let proxy = connection.remoteObjectProxyWithErrorHandler({ error in
-            completion(false, error.localizedDescription)
+            finish(.unreachable(message: error.localizedDescription))
         }) as? SensorDaemonProtocol else {
-            completion(false, "Could not connect to the sensor service.")
+            finish(.unreachable(message: "Could not connect to the sensor service."))
             return
         }
         proxy.startMonitoring(
             sensitivity: sensitivity,
-            minimumTapInterval: minimumTapInterval,
-            withReply: completion
-        )
+            minimumTapInterval: minimumTapInterval
+        ) { success, message in
+            finish(success ? .running(message: message) : .daemonRefused(message: message))
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Self.startReplyTimeout) {
+            finish(.unreachable(message: "The sensor service did not respond."))
+        }
     }
 
     func updateSensitivity(_ sensitivity: Double) {

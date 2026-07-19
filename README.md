@@ -53,6 +53,10 @@ Choose **Show Sensor Data** in Settings to see rolling accelerometer, gyroscope,
 - `SlaptopSensorDaemon`: root launch daemon registered with `SMAppService`; reads accelerometer and gyroscope HID reports.
 - `Shared`: the small Foundation XPC protocol shared by both processes.
 
+## Updates
+
+Slaptop checks this repository's GitHub releases for new versions — daily by default, configurable to weekly or manual-only in Settings → Software updates, with a "Check Now" button. When a newer build is found, Slaptop downloads the release `Slaptop.dmg`, verifies that the contained app is signed by this project's Developer ID team before replacing anything, installs it into `/Applications`, and relaunches.
+
 ## Distribution note
 
 The sensor path relies on undocumented macOS interfaces, so it may change in future hardware or macOS releases and is not suitable for Mac App Store distribution. A Developer ID build should be hardened, notarized, and tested on every supported MacBook family before distribution.

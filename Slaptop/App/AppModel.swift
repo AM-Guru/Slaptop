@@ -85,6 +85,7 @@ final class AppModel: ObservableObject {
     private static let maximumSensorSamples = 300
     private static let sensorChartUpdateInterval: TimeInterval = 1.0 / 8.0
     private static let calibrationArmingDelay = 0.35
+    let updater = AppUpdater()
     private let sensorService = SensorServiceController()
     private let defaults: UserDefaults
     private let classifier: TapClassifier
@@ -93,6 +94,8 @@ final class AppModel: ObservableObject {
     private var calibrationArmedAt: TimeInterval = 0
     private var nextSensorSampleID: UInt64 = 0
     private var isRefreshingSensorService = false
+    /// One automatic registration repair per start attempt; cleared on success.
+    private var hasAttemptedServiceRepair = false
     private var rawSensorSamples: [LiveSensorSample] = []
     private var isSensorDataPresentationActive = false
     private var lastSensorChartUpdateAt: TimeInterval = -.infinity
@@ -397,20 +400,65 @@ final class AppModel: ObservableObject {
         sensorService.start(
             sensitivity: activeSensorSensitivity,
             minimumTapInterval: minimumTapInterval
-        ) { [weak self] success, message in
+        ) { [weak self] result in
             DispatchQueue.main.async {
-                guard let self else { return }
-                self.isSensorRunning = success
-                if success {
-                    self.markMonitoringRequestActive(request)
-                    self.sensorService.setTelemetryEnabled(
-                        self.isSensorDataPresentationActive
-                    )
-                    self.statusMessage = self.activeMessage(for: request)
-                } else {
-                    self.cancelMonitoringRequest(request)
-                    self.statusMessage = message
+                self?.finishSensorStart(result, request: request)
+            }
+        }
+    }
+
+    private func finishSensorStart(
+        _ result: SensorServiceController.StartResult,
+        request: MonitoringRequest
+    ) {
+        switch result {
+        case .running:
+            hasAttemptedServiceRepair = false
+            isSensorRunning = true
+            markMonitoringRequestActive(request)
+            sensorService.setTelemetryEnabled(isSensorDataPresentationActive)
+            statusMessage = activeMessage(for: request)
+        case .daemonRefused(let message):
+            isSensorRunning = false
+            cancelMonitoringRequest(request)
+            statusMessage = message
+        case .unreachable(let message):
+            isSensorRunning = false
+            guard !hasAttemptedServiceRepair else {
+                cancelMonitoringRequest(request)
+                statusMessage = "\(message) Use Remove Sensor Service, then Request Access, to reinstall it."
+                return
+            }
+            // An unreachable daemon usually means launchd is killing its
+            // spawns because Background Task Management still records a
+            // previous build's code identity. Reinstalling the registration
+            // rebuilds that record.
+            hasAttemptedServiceRepair = true
+            statusMessage = "The sensor service is not responding. Repairing its registration…"
+            sensorService.reinstallService { [weak self] repairResult in
+                DispatchQueue.main.async {
+                    self?.finishSensorServiceRepair(repairResult, request: request)
                 }
+            }
+        }
+    }
+
+    private func finishSensorServiceRepair(
+        _ result: Result<Void, Error>,
+        request: MonitoringRequest
+    ) {
+        refreshSystemState()
+        switch result {
+        case .failure(let error):
+            cancelMonitoringRequest(request)
+            statusMessage = "Could not repair the sensor service: \(error.localizedDescription)"
+        case .success:
+            if helperAuthorization == .requiresApproval {
+                cancelMonitoringRequest(request)
+                sensorService.openApprovalSettings()
+                statusMessage = approvalMessage(for: request, isReapproval: true)
+            } else {
+                beginMonitoring(for: request)
             }
         }
     }

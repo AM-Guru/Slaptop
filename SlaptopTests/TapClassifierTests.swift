@@ -361,6 +361,40 @@ final class TapClassifierTests: XCTestCase {
         XCTAssertNil(classifier.classify(topLike))
     }
 
+    func testUpdateReleaseTagParsingUsesTrailingBuildNumber() {
+        XCTAssertEqual(AppUpdater.buildNumber(fromTag: "v1.0-build.27"), 27)
+        XCTAssertEqual(AppUpdater.buildNumber(fromTag: "v2.3-build.104"), 104)
+        XCTAssertNil(AppUpdater.buildNumber(fromTag: "v1.0"))
+        XCTAssertNil(AppUpdater.buildNumber(fromTag: "v1.0-build."))
+        XCTAssertNil(AppUpdater.buildNumber(fromTag: "v1.0-build.12beta"))
+    }
+
+    func testAutomaticUpdateChecksFollowTheChosenFrequency() {
+        let now = Date()
+        XCTAssertFalse(AppUpdater.isAutomaticCheckDue(frequency: .manual, lastCheckedAt: nil, now: now))
+        XCTAssertTrue(AppUpdater.isAutomaticCheckDue(frequency: .daily, lastCheckedAt: nil, now: now))
+        XCTAssertFalse(AppUpdater.isAutomaticCheckDue(
+            frequency: .daily,
+            lastCheckedAt: now.addingTimeInterval(-3_600),
+            now: now
+        ))
+        XCTAssertTrue(AppUpdater.isAutomaticCheckDue(
+            frequency: .daily,
+            lastCheckedAt: now.addingTimeInterval(-90_000),
+            now: now
+        ))
+        XCTAssertFalse(AppUpdater.isAutomaticCheckDue(
+            frequency: .weekly,
+            lastCheckedAt: now.addingTimeInterval(-90_000),
+            now: now
+        ))
+        XCTAssertTrue(AppUpdater.isAutomaticCheckDue(
+            frequency: .weekly,
+            lastCheckedAt: now.addingTimeInterval(-700_000),
+            now: now
+        ))
+    }
+
     func testCentroidRejectsMalformedFeatures() {
         XCTAssertNil(ImpactFeatures(values: [1, 2]))
         XCTAssertNil(ImpactFeatures(values: [1, 2, 3, 4, 5, .infinity]))

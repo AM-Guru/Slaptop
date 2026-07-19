@@ -5,10 +5,12 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var model: AppModel
+    @ObservedObject var updater: AppUpdater
     let showSensorData: () -> Void
 
     init(model: AppModel, showSensorData: @escaping () -> Void = {}) {
         self.model = model
+        self.updater = model.updater
         self.showSensorData = showSensorData
     }
 
@@ -22,6 +24,7 @@ struct SettingsView: View {
                     detectionSection
                     calibrationSection
                     mappingSection
+                    updatesSection
                     advancedSection
                 }
                 .padding(24)
@@ -240,6 +243,41 @@ struct SettingsView: View {
             Label(model.statusMessage, systemImage: "info.circle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+        }
+    }
+
+    private var updatesSection: some View {
+        SettingsSection(title: "Software updates", symbol: "arrow.down.circle") {
+            HStack {
+                Text("Version \(AppVersion.displayString(from: Bundle.main.infoDictionary ?? [:]))")
+                Spacer()
+                Button("Check Now") {
+                    updater.checkForUpdates()
+                }
+                .disabled(updaterIsBusy)
+            }
+
+            Picker("Check for updates", selection: $updater.frequency) {
+                ForEach(UpdateCheckFrequency.allCases, id: \.self) { frequency in
+                    Text(frequency.label).tag(frequency)
+                }
+            }
+            .pickerStyle(.segmented)
+
+            Text(updater.statusDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Text("Updates come from the project's GitHub releases. Each downloaded update is verified against Slaptop's code signature before it is installed, and Slaptop relaunches automatically afterwards.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    private var updaterIsBusy: Bool {
+        switch updater.phase {
+        case .checking, .downloading, .installing: return true
+        default: return false
         }
     }
 

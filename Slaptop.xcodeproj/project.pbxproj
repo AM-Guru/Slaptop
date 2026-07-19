@@ -30,6 +30,7 @@
 		984152CFF8B8B1C798ED7437 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AB0AC81430D0503F53B712 /* FirstLaunchView.swift */; };
 		9A08131686B4AD1AA9B95478 /* LaptopTapAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70858EA27D82F058BCFDA8EC /* LaptopTapAnimationView.swift */; };
 		9D442B9DC0162D5B6D1BCF8C /* AppVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49920BCC75DB75C7AFAE4206 /* AppVersion.swift */; };
+		9DCBE5EDA6D9ECB51AEFE9EB /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 381C426C4DD3A0123AE5DC08 /* AppUpdater.swift */; };
 		A1B9ACF5D0FE934FE23AD323 /* VisualLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C547F2E972F3B2E7F86297 /* VisualLayoutTests.swift */; };
 		ACCE9FA19600E757A07E32B6 /* guru.am.slaptop.sensor-daemon.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0BC90A39CC9320E3E5C55F2F /* guru.am.slaptop.sensor-daemon.plist */; };
 		AD4C93760A8899E60D68ED2F /* SensorXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */; };
@@ -88,6 +89,7 @@
 		2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapClassifier.swift; sourceTree = "<group>"; };
 		2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapTiming.swift; sourceTree = "<group>"; };
 		307D456250031D6388F6813E /* MotionFeatureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionFeatureDetector.swift; sourceTree = "<group>"; };
+		381C426C4DD3A0123AE5DC08 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactFeatures.swift; sourceTree = "<group>"; };
 		3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMonitoringPolicy.swift; sourceTree = "<group>"; };
 		3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionControlController.swift; sourceTree = "<group>"; };
@@ -207,6 +209,7 @@
 		63805EEA41B0ABEE77268A9F /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				381C426C4DD3A0123AE5DC08 /* AppUpdater.swift */,
 				3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */,
 				B9BC8F439C09E1ACE0564A81 /* SensorServiceController.swift */,
 			);
@@ -429,6 +432,7 @@
 				22C6C7FFA997E0DB5BB1E067 /* ActivationPreference.swift in Sources */,
 				36BD83C64D49C0E9E622280A /* AppDelegate.swift in Sources */,
 				BFF18DCCE2D8922A2E21F03D /* AppModel.swift in Sources */,
+				9DCBE5EDA6D9ECB51AEFE9EB /* AppUpdater.swift in Sources */,
 				9D442B9DC0162D5B6D1BCF8C /* AppVersion.swift in Sources */,
 				984152CFF8B8B1C798ED7437 /* FirstLaunchView.swift in Sources */,
 				8BBC542111DF55FF4B46B301 /* ImpactFeatures.swift in Sources */,

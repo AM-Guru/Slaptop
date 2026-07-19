@@ -44,6 +44,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         item.button?.action = #selector(toggleStatusPopover(_:))
         statusItem = item
         updateStatusItem()
+        // Scheduled here rather than in AppModel's initializer so unit tests
+        // constructing models never start network activity.
+        model.updater.startAutomaticChecks()
 
         modelObservation = Publishers.CombineLatest(model.$isEnabled, model.$isSensorLoggingEnabled)
             .removeDuplicates { previous, current in
