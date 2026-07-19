@@ -3,6 +3,7 @@
 set -euo pipefail
 umask 077
 
+readonly RELEASE_CHANNEL="${1:-}"
 readonly EXPECTED_REPOSITORY="AM-Guru/Slaptop"
 readonly EXPECTED_REF="refs/heads/main"
 readonly EXPECTED_TEAM_ID="59A594LZGR"
@@ -11,7 +12,6 @@ readonly EXPECTED_APP_STORE_DEVELOPMENT="Apple Development: Created via API (AHG
 readonly EXPECTED_APP_STORE_DISTRIBUTION="Apple Distribution: AM Guru, LLC (59A594LZGR)"
 readonly EXPECTED_APP_BUNDLE_ID="guru.am.slaptop"
 readonly EXPECTED_HELPER_BUNDLE_ID="guru.am.slaptop.sensor-daemon"
-readonly EXPECTED_TEST_BUNDLE_ID="guru.am.slaptop.tests"
 
 fail() {
   echo "Release configuration validation failed: $1" >&2
@@ -45,6 +45,57 @@ resolved_setting() {
     || fail "generated target is missing ${key}"
 }
 
+validate_pkcs12() {
+  local encoded_name="$1"
+  local password_name="$2"
+  local file_stem="$3"
+  local expected_identity="$4"
+  local p12_path="${VALIDATION_DIR}/${file_stem}.p12"
+  local cert_path="${VALIDATION_DIR}/${file_stem}-cert.pem"
+  local key_path="${VALIDATION_DIR}/${file_stem}-key.pem"
+  local certificate_subject
+
+  printf '%s' "${!encoded_name}" | /usr/bin/base64 -D > "${p12_path}" \
+    || fail "${expected_identity} PKCS#12 is not valid base64"
+  P12_VALIDATION_PASSWORD="${!password_name}" \
+    /usr/bin/openssl pkcs12 \
+      -in "${p12_path}" \
+      -passin env:P12_VALIDATION_PASSWORD \
+      -clcerts \
+      -nokeys \
+      -out "${cert_path}" >/dev/null 2>&1 \
+    || fail "${expected_identity} PKCS#12 or its password is invalid"
+  P12_VALIDATION_PASSWORD="${!password_name}" \
+    /usr/bin/openssl pkcs12 \
+      -in "${p12_path}" \
+      -passin env:P12_VALIDATION_PASSWORD \
+      -nocerts \
+      -nodes \
+      -out "${key_path}" >/dev/null 2>&1 \
+    || fail "${expected_identity} PKCS#12 does not contain an accessible private key"
+  /usr/bin/openssl pkey -in "${key_path}" -noout >/dev/null 2>&1 \
+    || fail "${expected_identity} PKCS#12 private key is invalid"
+
+  certificate_subject="$(
+    /usr/bin/openssl x509 \
+      -in "${cert_path}" \
+      -noout \
+      -subject
+  )"
+  [[ "${certificate_subject}" == *"${expected_identity}"* ]] \
+    || fail "certificate common name is not ${expected_identity}"
+  [[ "${certificate_subject}" =~ OU[[:space:]]*=[[:space:]]*${EXPECTED_TEAM_ID} ]] \
+    || fail "certificate team does not match the protected team"
+}
+
+case "${RELEASE_CHANNEL}" in
+  github|app-store)
+    ;;
+  *)
+    fail "usage: $0 github|app-store"
+    ;;
+esac
+
 for name in \
   GITHUB_ACTIONS \
   GITHUB_EVENT_NAME \
@@ -56,20 +107,30 @@ for name in \
   GITHUB_WORKSPACE \
   RUNNER_TEMP \
   APPLE_TEAM_ID \
-  DEVELOPER_ID_APPLICATION \
-  DEVELOPER_ID_P12_BASE64 \
-  DEVELOPER_ID_P12_PASSWORD \
-  APP_STORE_DEVELOPMENT \
-  APP_STORE_DEVELOPMENT_P12_BASE64 \
-  APP_STORE_DEVELOPMENT_P12_PASSWORD \
-  APP_STORE_DISTRIBUTION \
-  APP_STORE_DISTRIBUTION_P12_BASE64 \
-  APP_STORE_DISTRIBUTION_P12_PASSWORD \
   APP_STORE_CONNECT_PRIVATE_KEY_BASE64 \
   APP_STORE_CONNECT_KEY_ID \
   APP_STORE_CONNECT_ISSUER_ID; do
   require_value "${name}"
 done
+
+if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
+  for name in \
+    DEVELOPER_ID_APPLICATION \
+    DEVELOPER_ID_P12_BASE64 \
+    DEVELOPER_ID_P12_PASSWORD; do
+    require_value "${name}"
+  done
+else
+  for name in \
+    APP_STORE_DEVELOPMENT \
+    APP_STORE_DEVELOPMENT_P12_BASE64 \
+    APP_STORE_DEVELOPMENT_P12_PASSWORD \
+    APP_STORE_DISTRIBUTION \
+    APP_STORE_DISTRIBUTION_P12_BASE64 \
+    APP_STORE_DISTRIBUTION_P12_PASSWORD; do
+    require_value "${name}"
+  done
+fi
 
 expect_equal "GitHub Actions context" "${GITHUB_ACTIONS}" "true"
 expect_equal "event" "${GITHUB_EVENT_NAME}" "push"
@@ -78,15 +139,21 @@ expect_equal "ref" "${GITHUB_REF}" "${EXPECTED_REF}"
 expect_equal "ref name" "${GITHUB_REF_NAME}" "main"
 expect_equal "ref type" "${GITHUB_REF_TYPE}" "branch"
 expect_equal "Apple team" "${APPLE_TEAM_ID}" "${EXPECTED_TEAM_ID}"
-expect_equal "Developer ID identity" "${DEVELOPER_ID_APPLICATION}" "${EXPECTED_DEVELOPER_ID}"
-expect_equal \
-  "App Store development identity" \
-  "${APP_STORE_DEVELOPMENT}" \
-  "${EXPECTED_APP_STORE_DEVELOPMENT}"
-expect_equal \
-  "App Store distribution identity" \
-  "${APP_STORE_DISTRIBUTION}" \
-  "${EXPECTED_APP_STORE_DISTRIBUTION}"
+if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
+  expect_equal \
+    "Developer ID identity" \
+    "${DEVELOPER_ID_APPLICATION}" \
+    "${EXPECTED_DEVELOPER_ID}"
+else
+  expect_equal \
+    "App Store development identity" \
+    "${APP_STORE_DEVELOPMENT}" \
+    "${EXPECTED_APP_STORE_DEVELOPMENT}"
+  expect_equal \
+    "App Store distribution identity" \
+    "${APP_STORE_DISTRIBUTION}" \
+    "${EXPECTED_APP_STORE_DISTRIBUTION}"
+fi
 
 [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]] || fail "GITHUB_SHA is not a full commit SHA"
 [[ -z "${GITHUB_HEAD_REF:-}" ]] || fail "pull-request head refs may not use the release runner"
@@ -100,82 +167,102 @@ fi
 [[ -z "$(git -C "${GITHUB_WORKSPACE}" status --porcelain --untracked-files=no)" ]] \
   || fail "tracked files changed before release validation"
 
-expect_equal \
-  "app Info.plist bundle identifier" \
-  "$(plist_value CFBundleIdentifier "${GITHUB_WORKSPACE}/Resources/Slaptop-Info.plist")" \
-  "${EXPECTED_APP_BUNDLE_ID}"
-expect_equal \
-  "app category" \
-  "$(plist_value LSApplicationCategoryType "${GITHUB_WORKSPACE}/Resources/Slaptop-Info.plist")" \
-  "public.app-category.utilities"
-expect_equal \
-  "App Store Info.plist bundle identifier" \
-  "$(plist_value CFBundleIdentifier "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
-  "${EXPECTED_APP_BUNDLE_ID}"
-expect_equal \
-  "App Store category" \
-  "$(plist_value LSApplicationCategoryType "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
-  "public.app-category.utilities"
-expect_equal \
-  "App Store sandbox entitlement" \
-  "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements")" \
-  "true"
-expect_equal \
-  "App Store IOKit exception" \
-  "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:0' "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements")" \
-  "IOHIDLibUserClient"
-if /usr/libexec/PlistBuddy \
-  -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:1' \
-  "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements" >/dev/null 2>&1; then
-  fail "App Store target contains an unexpected additional IOKit exception"
+if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
+  expect_equal \
+    "app Info.plist bundle identifier" \
+    "$(plist_value CFBundleIdentifier "${GITHUB_WORKSPACE}/Resources/Slaptop-Info.plist")" \
+    "${EXPECTED_APP_BUNDLE_ID}"
+  expect_equal \
+    "app category" \
+    "$(plist_value LSApplicationCategoryType "${GITHUB_WORKSPACE}/Resources/Slaptop-Info.plist")" \
+    "public.app-category.utilities"
+  expect_equal \
+    "launch daemon label" \
+    "$(plist_value Label "${GITHUB_WORKSPACE}/Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist")" \
+    "${EXPECTED_HELPER_BUNDLE_ID}"
+  expect_equal \
+    "launch daemon associated app" \
+    "$(plist_value AssociatedBundleIdentifiers "${GITHUB_WORKSPACE}/Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist")" \
+    "${EXPECTED_APP_BUNDLE_ID}"
+  expect_equal \
+    "launch daemon Mach service" \
+    "$(/usr/libexec/PlistBuddy -c "Print :MachServices:${EXPECTED_HELPER_BUNDLE_ID}" "${GITHUB_WORKSPACE}/Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist")" \
+    "true"
+  expect_equal \
+    "export team" \
+    "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/ExportOptions.plist")" \
+    "${EXPECTED_TEAM_ID}"
+  expect_equal \
+    "notarization export team" \
+    "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/NotarizeOptions.plist")" \
+    "${EXPECTED_TEAM_ID}"
+else
+  expect_equal \
+    "App Store Info.plist bundle identifier" \
+    "$(plist_value CFBundleIdentifier "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
+    "${EXPECTED_APP_BUNDLE_ID}"
+  expect_equal \
+    "App Store category" \
+    "$(plist_value LSApplicationCategoryType "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
+    "public.app-category.utilities"
+  expect_equal \
+    "App Store sandbox entitlement" \
+    "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements")" \
+    "true"
+  expect_equal \
+    "App Store IOKit exception" \
+    "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:0' "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements")" \
+    "IOHIDLibUserClient"
+  if /usr/libexec/PlistBuddy \
+    -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:1' \
+    "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements" >/dev/null 2>&1; then
+    fail "App Store target contains an unexpected additional IOKit exception"
+  fi
+  expect_equal \
+    "App Store export team" \
+    "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+    "${EXPECTED_TEAM_ID}"
+  expect_equal \
+    "App Store export destination" \
+    "$(plist_value destination "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+    "upload"
+  expect_equal \
+    "App Store export method" \
+    "$(plist_value method "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+    "app-store-connect"
+  expect_equal \
+    "App Store export signing style" \
+    "$(plist_value signingStyle "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+    "automatic"
+  expect_equal \
+    "App Store internal-testing restriction" \
+    "$(plist_value testFlightInternalTestingOnly "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+    "true"
 fi
-expect_equal \
-  "launch daemon label" \
-  "$(plist_value Label "${GITHUB_WORKSPACE}/Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist")" \
-  "${EXPECTED_HELPER_BUNDLE_ID}"
-expect_equal \
-  "launch daemon associated app" \
-  "$(plist_value AssociatedBundleIdentifiers "${GITHUB_WORKSPACE}/Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist")" \
-  "${EXPECTED_APP_BUNDLE_ID}"
-expect_equal \
-  "launch daemon Mach service" \
-  "$(/usr/libexec/PlistBuddy -c "Print :MachServices:${EXPECTED_HELPER_BUNDLE_ID}" "${GITHUB_WORKSPACE}/Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist")" \
-  "true"
-expect_equal \
-  "export team" \
-  "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/ExportOptions.plist")" \
-  "${EXPECTED_TEAM_ID}"
-expect_equal \
-  "notarization export team" \
-  "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/NotarizeOptions.plist")" \
-  "${EXPECTED_TEAM_ID}"
-expect_equal \
-  "App Store export team" \
-  "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
-  "${EXPECTED_TEAM_ID}"
-expect_equal \
-  "App Store export destination" \
-  "$(plist_value destination "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
-  "upload"
-expect_equal \
-  "App Store export method" \
-  "$(plist_value method "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
-  "app-store-connect"
-expect_equal \
-  "App Store export signing style" \
-  "$(plist_value signingStyle "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
-  "automatic"
-expect_equal \
-  "App Store internal-testing restriction" \
-  "$(plist_value testFlightInternalTestingOnly "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
-  "true"
 
+if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
+  legacy_paths=(
+    Resources/Slaptop-Info.plist
+    Resources/LaunchDaemons
+    Slaptop
+    Shared
+    SlaptopSensorDaemon
+  )
+else
+  legacy_paths=(
+    Resources/SlaptopAppStore-Info.plist
+    Distribution/SlaptopAppStore.entitlements
+    Slaptop
+    Shared
+    SlaptopAppStore
+  )
+fi
 if git -C "${GITHUB_WORKSPACE}" grep -n -E 'com\.kalani' -- \
-  project.yml Resources Slaptop Shared SlaptopSensorDaemon 2>/dev/null; then
-  fail "repository contains an unapproved legacy bundle ID"
+  "${legacy_paths[@]}" 2>/dev/null; then
+  fail "${RELEASE_CHANNEL} release files contain an unapproved legacy bundle ID"
 fi
 
-VALIDATION_DIR="$(mktemp -d "${RUNNER_TEMP%/}/slaptop-release-validation.XXXXXX")"
+VALIDATION_DIR="$(mktemp -d "${RUNNER_TEMP%/}/slaptop-${RELEASE_CHANNEL}-validation.XXXXXX")"
 trap 'rm -rf "${VALIDATION_DIR}"' EXIT
 
 xcodegen generate \
@@ -185,7 +272,13 @@ xcodegen generate \
   --no-env \
   --quiet
 
-for target in Slaptop SlaptopAppStore SlaptopSensorDaemon SlaptopTests; do
+if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
+  targets=(Slaptop SlaptopSensorDaemon)
+else
+  targets=(SlaptopAppStore)
+fi
+
+for target in "${targets[@]}"; do
   settings_path="${VALIDATION_DIR}/${target}-settings.json"
   xcodebuild \
     -project "${VALIDATION_DIR}/Slaptop.xcodeproj" \
@@ -208,127 +301,52 @@ for target in Slaptop SlaptopAppStore SlaptopSensorDaemon SlaptopTests; do
     "arm64"
 done
 
-expect_equal \
-  "Slaptop bundle identifier" \
-  "$(resolved_setting "${VALIDATION_DIR}/Slaptop-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
-  "${EXPECTED_APP_BUNDLE_ID}"
-expect_equal \
-  "App Store bundle identifier" \
-  "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
-  "${EXPECTED_APP_BUNDLE_ID}"
-expect_equal \
-  "App Store sandbox build setting" \
-  "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" ENABLE_APP_SANDBOX)" \
-  "YES"
-expect_equal \
-  "App Store entitlements path" \
-  "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" CODE_SIGN_ENTITLEMENTS)" \
-  "Distribution/SlaptopAppStore.entitlements"
-expect_equal \
-  "sensor helper bundle identifier" \
-  "$(resolved_setting "${VALIDATION_DIR}/SlaptopSensorDaemon-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
-  "${EXPECTED_HELPER_BUNDLE_ID}"
-expect_equal \
-  "test bundle identifier" \
-  "$(resolved_setting "${VALIDATION_DIR}/SlaptopTests-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
-  "${EXPECTED_TEST_BUNDLE_ID}"
-expect_equal \
-  "Slaptop hardened runtime" \
-  "$(resolved_setting "${VALIDATION_DIR}/Slaptop-settings.json" ENABLE_HARDENED_RUNTIME)" \
-  "YES"
-expect_equal \
-  "sensor helper hardened runtime" \
-  "$(resolved_setting "${VALIDATION_DIR}/SlaptopSensorDaemon-settings.json" ENABLE_HARDENED_RUNTIME)" \
-  "YES"
-
-printf '%s' "${DEVELOPER_ID_P12_BASE64}" | /usr/bin/base64 -D > "${VALIDATION_DIR}/developer-id.p12" \
-  || fail "Developer ID PKCS#12 is not valid base64"
-P12_VALIDATION_PASSWORD="${DEVELOPER_ID_P12_PASSWORD}" \
-  /usr/bin/openssl pkcs12 \
-    -in "${VALIDATION_DIR}/developer-id.p12" \
-    -passin env:P12_VALIDATION_PASSWORD \
-    -clcerts \
-    -nokeys \
-    -out "${VALIDATION_DIR}/developer-id-cert.pem" >/dev/null 2>&1 \
-  || fail "Developer ID PKCS#12 or its password is invalid"
-certificate_subject="$(
-  /usr/bin/openssl x509 \
-    -in "${VALIDATION_DIR}/developer-id-cert.pem" \
-    -noout \
-    -subject
-)"
-[[ "${certificate_subject}" == *"${EXPECTED_DEVELOPER_ID}"* ]] \
-  || fail "Developer ID certificate common name is not the protected identity"
-[[ "${certificate_subject}" =~ OU[[:space:]]*=[[:space:]]*${EXPECTED_TEAM_ID} ]] \
-  || fail "Developer ID certificate team does not match the protected team"
-
-printf '%s' "${APP_STORE_DEVELOPMENT_P12_BASE64}" | /usr/bin/base64 -D \
-  > "${VALIDATION_DIR}/apple-development.p12" \
-  || fail "Apple Development PKCS#12 is not valid base64"
-P12_VALIDATION_PASSWORD="${APP_STORE_DEVELOPMENT_P12_PASSWORD}" \
-  /usr/bin/openssl pkcs12 \
-    -in "${VALIDATION_DIR}/apple-development.p12" \
-    -passin env:P12_VALIDATION_PASSWORD \
-    -clcerts \
-    -nokeys \
-    -out "${VALIDATION_DIR}/apple-development-cert.pem" >/dev/null 2>&1 \
-  || fail "Apple Development PKCS#12 or its password is invalid"
-development_subject="$(
-  /usr/bin/openssl x509 \
-    -in "${VALIDATION_DIR}/apple-development-cert.pem" \
-    -noout \
-    -subject
-)"
-[[ "${development_subject}" == *"${EXPECTED_APP_STORE_DEVELOPMENT}"* ]] \
-  || fail "Apple Development certificate common name is not the protected identity"
-[[ "${development_subject}" =~ OU[[:space:]]*=[[:space:]]*${EXPECTED_TEAM_ID} ]] \
-  || fail "Apple Development certificate team does not match the protected team"
-P12_VALIDATION_PASSWORD="${APP_STORE_DEVELOPMENT_P12_PASSWORD}" \
-  /usr/bin/openssl pkcs12 \
-    -in "${VALIDATION_DIR}/apple-development.p12" \
-    -passin env:P12_VALIDATION_PASSWORD \
-    -nocerts \
-    -nodes \
-    -out "${VALIDATION_DIR}/apple-development-key.pem" >/dev/null 2>&1 \
-  || fail "Apple Development PKCS#12 does not contain an accessible private key"
-/usr/bin/openssl pkey \
-  -in "${VALIDATION_DIR}/apple-development-key.pem" \
-  -noout >/dev/null 2>&1 \
-  || fail "Apple Development PKCS#12 private key is invalid"
-
-printf '%s' "${APP_STORE_DISTRIBUTION_P12_BASE64}" | /usr/bin/base64 -D \
-  > "${VALIDATION_DIR}/apple-distribution.p12" \
-  || fail "Apple Distribution PKCS#12 is not valid base64"
-P12_VALIDATION_PASSWORD="${APP_STORE_DISTRIBUTION_P12_PASSWORD}" \
-  /usr/bin/openssl pkcs12 \
-    -in "${VALIDATION_DIR}/apple-distribution.p12" \
-    -passin env:P12_VALIDATION_PASSWORD \
-    -clcerts \
-    -nokeys \
-    -out "${VALIDATION_DIR}/apple-distribution-cert.pem" >/dev/null 2>&1 \
-  || fail "Apple Distribution PKCS#12 or its password is invalid"
-distribution_subject="$(
-  /usr/bin/openssl x509 \
-    -in "${VALIDATION_DIR}/apple-distribution-cert.pem" \
-    -noout \
-    -subject
-)"
-[[ "${distribution_subject}" == *"${EXPECTED_APP_STORE_DISTRIBUTION}"* ]] \
-  || fail "Apple Distribution certificate common name is not the protected identity"
-[[ "${distribution_subject}" =~ OU[[:space:]]*=[[:space:]]*${EXPECTED_TEAM_ID} ]] \
-  || fail "Apple Distribution certificate team does not match the protected team"
-P12_VALIDATION_PASSWORD="${APP_STORE_DISTRIBUTION_P12_PASSWORD}" \
-  /usr/bin/openssl pkcs12 \
-    -in "${VALIDATION_DIR}/apple-distribution.p12" \
-    -passin env:P12_VALIDATION_PASSWORD \
-    -nocerts \
-    -nodes \
-    -out "${VALIDATION_DIR}/apple-distribution-key.pem" >/dev/null 2>&1 \
-  || fail "Apple Distribution PKCS#12 does not contain an accessible private key"
-/usr/bin/openssl pkey \
-  -in "${VALIDATION_DIR}/apple-distribution-key.pem" \
-  -noout >/dev/null 2>&1 \
-  || fail "Apple Distribution PKCS#12 private key is invalid"
+if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
+  expect_equal \
+    "Slaptop bundle identifier" \
+    "$(resolved_setting "${VALIDATION_DIR}/Slaptop-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
+    "${EXPECTED_APP_BUNDLE_ID}"
+  expect_equal \
+    "sensor helper bundle identifier" \
+    "$(resolved_setting "${VALIDATION_DIR}/SlaptopSensorDaemon-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
+    "${EXPECTED_HELPER_BUNDLE_ID}"
+  expect_equal \
+    "Slaptop hardened runtime" \
+    "$(resolved_setting "${VALIDATION_DIR}/Slaptop-settings.json" ENABLE_HARDENED_RUNTIME)" \
+    "YES"
+  expect_equal \
+    "sensor helper hardened runtime" \
+    "$(resolved_setting "${VALIDATION_DIR}/SlaptopSensorDaemon-settings.json" ENABLE_HARDENED_RUNTIME)" \
+    "YES"
+  validate_pkcs12 \
+    DEVELOPER_ID_P12_BASE64 \
+    DEVELOPER_ID_P12_PASSWORD \
+    developer-id \
+    "${EXPECTED_DEVELOPER_ID}"
+else
+  expect_equal \
+    "App Store bundle identifier" \
+    "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
+    "${EXPECTED_APP_BUNDLE_ID}"
+  expect_equal \
+    "App Store sandbox build setting" \
+    "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" ENABLE_APP_SANDBOX)" \
+    "YES"
+  expect_equal \
+    "App Store entitlements path" \
+    "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" CODE_SIGN_ENTITLEMENTS)" \
+    "Distribution/SlaptopAppStore.entitlements"
+  validate_pkcs12 \
+    APP_STORE_DEVELOPMENT_P12_BASE64 \
+    APP_STORE_DEVELOPMENT_P12_PASSWORD \
+    apple-development \
+    "${EXPECTED_APP_STORE_DEVELOPMENT}"
+  validate_pkcs12 \
+    APP_STORE_DISTRIBUTION_P12_BASE64 \
+    APP_STORE_DISTRIBUTION_P12_PASSWORD \
+    apple-distribution \
+    "${EXPECTED_APP_STORE_DISTRIBUTION}"
+fi
 
 printf '%s' "${APP_STORE_CONNECT_PRIVATE_KEY_BASE64}" | /usr/bin/base64 -D \
   > "${VALIDATION_DIR}/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8" \
@@ -342,4 +360,4 @@ printf '%s' "${APP_STORE_CONNECT_PRIVATE_KEY_BASE64}" | /usr/bin/base64 -D \
 [[ "${APP_STORE_CONNECT_ISSUER_ID}" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] \
   || fail "App Store Connect issuer ID has an unexpected format"
 
-echo "Release repository, ref, bundle IDs, team, certificates, and notarization key are valid."
+echo "The ${RELEASE_CHANNEL} release repository, ref, project settings, identities, and credentials are valid."

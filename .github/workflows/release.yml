@@ -1,4 +1,4 @@
-name: Build macOS release and stage App Store QA
+name: Build macOS releases
 
 on:
   push:
@@ -10,27 +10,27 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  github_release:
     if: >-
       github.repository == 'AM-Guru/Slaptop' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       github.ref_type == 'branch'
-    name: Sign, publish, and upload Slaptop for QA
+    name: Publish notarized GitHub release
     runs-on:
       group: slaptop-main-release
       labels: [self-hosted, macOS, macos-build, xcode]
     environment: slaptop-release
-    timeout-minutes: 90
+    timeout-minutes: 60
+    permissions:
+      contents: write
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR }}
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
       DEVELOPER_ID_APPLICATION: ${{ vars.DEVELOPER_ID_APPLICATION }}
-      APP_STORE_DEVELOPMENT: ${{ vars.APP_STORE_DEVELOPMENT }}
-      APP_STORE_DISTRIBUTION: ${{ vars.APP_STORE_DISTRIBUTION }}
 
     steps:
       - name: Check out the release commit
@@ -39,7 +39,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Validate runner and protected configuration
+      - name: Validate GitHub release runner configuration
         shell: bash
         run: |
           set -euo pipefail
@@ -48,12 +48,10 @@ jobs:
             DEVELOPER_DIR
             APPLE_TEAM_ID
             DEVELOPER_ID_APPLICATION
-            APP_STORE_DEVELOPMENT
-            APP_STORE_DISTRIBUTION
           )
           for name in "${required[@]}"; do
             if [[ -z "${!name:-}" ]]; then
-              echo "Missing required GitHub Actions configuration: ${name}" >&2
+              echo "Missing required GitHub release configuration: ${name}" >&2
               exit 1
             fi
           done
@@ -75,19 +73,15 @@ jobs:
           fi
           xcodegen --version
 
-      - name: Validate release identity and project configuration
+      - name: Validate GitHub release identity and project configuration
         shell: bash
         env:
           DEVELOPER_ID_P12_BASE64: ${{ secrets.DEVELOPER_ID_P12_BASE64 }}
           DEVELOPER_ID_P12_PASSWORD: ${{ secrets.DEVELOPER_ID_P12_PASSWORD }}
-          APP_STORE_DEVELOPMENT_P12_BASE64: ${{ secrets.APP_STORE_DEVELOPMENT_P12_BASE64 }}
-          APP_STORE_DEVELOPMENT_P12_PASSWORD: ${{ secrets.APP_STORE_DEVELOPMENT_P12_PASSWORD }}
-          APP_STORE_DISTRIBUTION_P12_BASE64: ${{ secrets.APP_STORE_DISTRIBUTION_P12_BASE64 }}
-          APP_STORE_DISTRIBUTION_P12_PASSWORD: ${{ secrets.APP_STORE_DISTRIBUTION_P12_PASSWORD }}
           APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
           APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-        run: Scripts/validate-release-configuration.sh
+        run: Scripts/validate-release-configuration.sh github
 
       - name: Build, sign, notarize, and package
         id: package
@@ -115,6 +109,78 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "${RELEASE_TITLE}" \
             --generate-notes
+
+  app_store_qa:
+    needs: github_release
+    if: >-
+      needs.github_release.result == 'success' &&
+      github.repository == 'AM-Guru/Slaptop' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      github.ref_type == 'branch'
+    name: Upload Mac App Store QA build
+    runs-on:
+      group: slaptop-main-release
+      labels: [self-hosted, macOS, macos-build, xcode]
+    environment: slaptop-release
+    timeout-minutes: 45
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+      APP_STORE_DEVELOPMENT: ${{ vars.APP_STORE_DEVELOPMENT }}
+      APP_STORE_DISTRIBUTION: ${{ vars.APP_STORE_DISTRIBUTION }}
+
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate App Store runner configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          required=(
+            DEVELOPER_DIR
+            APPLE_TEAM_ID
+            APP_STORE_DEVELOPMENT
+            APP_STORE_DISTRIBUTION
+          )
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required App Store configuration: ${name}" >&2
+              exit 1
+            fi
+          done
+
+          [[ "$(uname -s)" == "Darwin" ]]
+          [[ -x "${DEVELOPER_DIR}/usr/bin/xcodebuild" ]]
+          command -v security >/dev/null
+          command -v codesign >/dev/null
+
+      - name: Ensure XcodeGen is available
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null; then
+            command -v brew >/dev/null
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Validate App Store identity and project configuration
+        shell: bash
+        env:
+          APP_STORE_DEVELOPMENT_P12_BASE64: ${{ secrets.APP_STORE_DEVELOPMENT_P12_BASE64 }}
+          APP_STORE_DEVELOPMENT_P12_PASSWORD: ${{ secrets.APP_STORE_DEVELOPMENT_P12_PASSWORD }}
+          APP_STORE_DISTRIBUTION_P12_BASE64: ${{ secrets.APP_STORE_DISTRIBUTION_P12_BASE64 }}
+          APP_STORE_DISTRIBUTION_P12_PASSWORD: ${{ secrets.APP_STORE_DISTRIBUTION_P12_PASSWORD }}
+          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: Scripts/validate-release-configuration.sh app-store
 
       - name: Package and upload Mac App Store QA build
         shell: bash

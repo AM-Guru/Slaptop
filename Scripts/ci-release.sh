@@ -51,6 +51,7 @@ DMG_LAYOUT_SCRIPT="${GITHUB_WORKSPACE}/Scripts/configure-dmg.applescript"
 KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
 ORIGINAL_KEYCHAINS=()
 DMG_IS_MOUNTED=false
+DMG_LAYOUT_APPLIED=false
 APP_PATH=""
 LSREGISTER='/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister'
 
@@ -223,7 +224,11 @@ hdiutil attach \
   -mountpoint "${MOUNT_POINT}" \
   "${DMG_RW_PATH}" >/dev/null
 DMG_IS_MOUNTED=true
-/usr/bin/osascript "${DMG_LAYOUT_SCRIPT}" "${MOUNT_POINT}"
+if /usr/bin/osascript "${DMG_LAYOUT_SCRIPT}" "${MOUNT_POINT}"; then
+  DMG_LAYOUT_APPLIED=true
+else
+  echo "::warning title=DMG Finder layout::Finder did not finish the optional DMG layout. Publishing the verified drag-to-install image without custom window metadata."
+fi
 /bin/sync
 hdiutil detach "${MOUNT_POINT}" -quiet
 DMG_IS_MOUNTED=false
@@ -260,11 +265,14 @@ APPLICATIONS_LINK="$(readlink "${MOUNT_POINT}/Applications" 2>/dev/null || true)
 if [[ "${VISIBLE_ENTRY_COUNT}" != "2" \
   || ! -d "${MOUNT_POINT}/Slaptop.app" \
   || "${APPLICATIONS_LINK}" != "/Applications" \
-  || ! -s "${MOUNT_POINT}/.DS_Store" \
   || ! -f "${MOUNT_POINT}/.background/background.png" ]] \
   || ! cmp -s "${DMG_BACKGROUND_PATH}" "${MOUNT_POINT}/.background/background.png"; then
-  echo "Slaptop.dmg must contain the app, Applications shortcut, background, and Finder layout." >&2
+  echo "Slaptop.dmg must contain the app, Applications shortcut, and background asset." >&2
   find "${MOUNT_POINT}" -mindepth 1 -maxdepth 1 -print >&2
+  exit 1
+fi
+if [[ "${DMG_LAYOUT_APPLIED}" == true && ! -s "${MOUNT_POINT}/.DS_Store" ]]; then
+  echo "Finder reported a successful DMG layout but did not save its metadata." >&2
   exit 1
 fi
 
