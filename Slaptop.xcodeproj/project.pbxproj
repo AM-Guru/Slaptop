@@ -8,45 +8,77 @@
 
 /* Begin PBXBuildFile section */
 		03F1C7ECEDA4E940B9E0A968 /* TapKeyBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DF5E6852E600D7A9EA3709 /* TapKeyBinding.swift */; };
+		075D420ED1BAA4942EEFDE91 /* SensorDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026A90F7C48D0494431CBA42 /* SensorDataView.swift */; };
 		092679867606E8E3343B4899 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65ACB4D2F7937CF7DC18B27 /* SettingsView.swift */; };
 		0A5AF4B023A25936DDCF13BA /* MotionFeatureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307D456250031D6388F6813E /* MotionFeatureDetector.swift */; };
+		1611E64C1AAF68EE6C6D18BF /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5519916BCD0BD5B3FA76EE4 /* IOKit.framework */; };
+		1675D5FA5C1F98BC93D72069 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9505F5BFF978FAABAE029271 /* MenuBarView.swift */; };
 		16829FA25630C16629E91635 /* SensorMonitoringPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */; };
 		1C86FB2641866707BBB05626 /* SensorServiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9BC8F439C09E1ACE0564A81 /* SensorServiceController.swift */; };
+		20DABB2071F78B7F12672147 /* SensorDataConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 759650707851F527BF5844E5 /* SensorDataConstants.swift */; };
 		21339BF1B57ABCA5863723AC /* SlaptopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5424CBE1A933B221CD7D0049 /* SlaptopApp.swift */; };
+		21C5DBF8B82F423D566F9CF8 /* SensorDataConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 759650707851F527BF5844E5 /* SensorDataConstants.swift */; };
 		22C6C7FFA997E0DB5BB1E067 /* ActivationPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5A9E57B2241CA2B70B3931 /* ActivationPreference.swift */; };
 		25E1F830682914A88197104A /* LiveSensorSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C28A1D72F9ECACA259FCA0 /* LiveSensorSample.swift */; };
+		286248B775B522CC3A8E2D0E /* AppVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49920BCC75DB75C7AFAE4206 /* AppVersion.swift */; };
 		29B375B197FFF6AACB96BBD2 /* SensorXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */; };
 		2D8DC5F1FC29343DB05E6636 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9505F5BFF978FAABAE029271 /* MenuBarView.swift */; };
 		3394391FADD57FD704586661 /* SensorDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026A90F7C48D0494431CBA42 /* SensorDataView.swift */; };
+		340BF7F7473B1944B450CC73 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC63B79D14BAC461DA3BA48 /* AppDelegate.swift */; };
 		36BD83C64D49C0E9E622280A /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FC63B79D14BAC461DA3BA48 /* AppDelegate.swift */; };
+		3B843ABFDC980987A80B459B /* LaptopTapAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70858EA27D82F058BCFDA8EC /* LaptopTapAnimationView.swift */; };
 		3F5439C22057DB49DCC0FB3A /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E1BD5637F5F11231EEE86A0 /* main.swift */; };
+		4436719C428FDD9FA9236CD4 /* TapKeyBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DF5E6852E600D7A9EA3709 /* TapKeyBinding.swift */; };
+		4916D3BEF4D78A05F16AA4E1 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B147CC28CA1BE6F35ADD1E7C /* AppModel.swift */; };
 		5345434210C7816F268306E8 /* MissionControlController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */; };
 		56FD7F0B5B78D994FB88C9D7 /* CodeSignatureValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8708430F7BDF572D1CF4F2B1 /* CodeSignatureValidator.swift */; };
 		58DDE41D68E72387807AC065 /* SPUHIDMotionSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 090BB54D9EFE531CA6A92425 /* SPUHIDMotionSensor.swift */; };
 		62D95986608308D9FBD678F1 /* Slaptop-icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6679059206F0F8AAD01B38DF /* Slaptop-icon.icon */; };
+		63AE0A5EFE42D1F5392502DF /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 868B9096294EFDF3E055497D /* LICENSE */; };
+		6C9D2B7B493222F532E9F788 /* ImpactFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */; };
+		72DA783B2D7683FAA04B1252 /* TapTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */; };
+		7F5F23C10505B0F926048C97 /* LiveSensorSample.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8C28A1D72F9ECACA259FCA0 /* LiveSensorSample.swift */; };
 		7FBFDD7309AD610844363637 /* TapTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */; };
+		84B58F8B6C827FA688F349CE /* SensorMonitoringPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */; };
 		86588A2689E68A6B74B95CB7 /* TapTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */; };
 		8BBC542111DF55FF4B46B301 /* ImpactFeatures.swift in Sources */ = {isa = PBXBuildFile; fileRef = 387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */; };
+		90F919EBE749CC326755ED2C /* SandboxSensorServiceController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B2661FBBC16A2DE73EFC340 /* SandboxSensorServiceController.swift */; };
 		95ECEAA821EC855618CC6D37 /* NativeVerticalScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFB194000F20CE57D0EC36A7 /* NativeVerticalScrollView.swift */; };
+		9704D06E2761D6B7ABFCD40C /* TapSensitivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */; };
+		97D655E90B9E244A4887048A /* NativeVerticalScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFB194000F20CE57D0EC36A7 /* NativeVerticalScrollView.swift */; };
 		984152CFF8B8B1C798ED7437 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AB0AC81430D0503F53B712 /* FirstLaunchView.swift */; };
 		9A08131686B4AD1AA9B95478 /* LaptopTapAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70858EA27D82F058BCFDA8EC /* LaptopTapAnimationView.swift */; };
 		9D442B9DC0162D5B6D1BCF8C /* AppVersion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49920BCC75DB75C7AFAE4206 /* AppVersion.swift */; };
+		9D6B6A6FCE0B8D4F6DE60285 /* SlaptopApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5424CBE1A933B221CD7D0049 /* SlaptopApp.swift */; };
 		9DCBE5EDA6D9ECB51AEFE9EB /* AppUpdater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 381C426C4DD3A0123AE5DC08 /* AppUpdater.swift */; };
+		9F560030E96A851918944886 /* MotionFeatureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307D456250031D6388F6813E /* MotionFeatureDetector.swift */; };
 		A1B9ACF5D0FE934FE23AD323 /* VisualLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97C547F2E972F3B2E7F86297 /* VisualLayoutTests.swift */; };
 		ACCE9FA19600E757A07E32B6 /* guru.am.slaptop.sensor-daemon.plist in CopyFiles */ = {isa = PBXBuildFile; fileRef = 0BC90A39CC9320E3E5C55F2F /* guru.am.slaptop.sensor-daemon.plist */; };
 		AD4C93760A8899E60D68ED2F /* SensorXPCProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */; };
+		B2A15642186B419A5F4D0799 /* TapClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */; };
+		B4AD86B7AD7257B302837E85 /* SensorChartScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF7B9DA21D1A0BEBA98CFC9 /* SensorChartScale.swift */; };
+		B659B223984C27213C139FB8 /* ActivationPreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C5A9E57B2241CA2B70B3931 /* ActivationPreference.swift */; };
 		BBB2CC888C959D82B93973E3 /* NSLock+WithLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED3BAFA8BD2DE5F9A54C290 /* NSLock+WithLock.swift */; };
 		BFF18DCCE2D8922A2E21F03D /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B147CC28CA1BE6F35ADD1E7C /* AppModel.swift */; };
 		C0C87BF3B21DB821A2ABA3F8 /* TapClassifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */; };
+		C29E086DC49F8A84243C04AB /* NSLock+WithLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8ED3BAFA8BD2DE5F9A54C290 /* NSLock+WithLock.swift */; };
 		C8CD8CA2C335A83D0579CFC7 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 68A0171A917107C2285ED4F5 /* ServiceManagement.framework */; };
+		C91F529AAF13FD727AC6A060 /* SensorDataConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 759650707851F527BF5844E5 /* SensorDataConstants.swift */; };
 		CD10D1C7E00C6026490AE557 /* TapSensitivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */; };
+		CEA0D50F210D8D30AA3FF564 /* FirstLaunchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9AB0AC81430D0503F53B712 /* FirstLaunchView.swift */; };
+		D777484639713D782A51637E /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65ACB4D2F7937CF7DC18B27 /* SettingsView.swift */; };
 		D8010BBC2A22BADFCC462532 /* SensorChartScale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EF7B9DA21D1A0BEBA98CFC9 /* SensorChartScale.swift */; };
 		D802017C99FF350E0020DBBE /* SensorDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B9EAA048E3B55329CF729A1 /* SensorDaemon.swift */; };
+		DC17163C59C2CD1962A8029E /* SPUHIDMotionSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 090BB54D9EFE531CA6A92425 /* SPUHIDMotionSensor.swift */; };
+		E0455BAC4851740E720E71C6 /* THIRD_PARTY_NOTICES.md in Resources */ = {isa = PBXBuildFile; fileRef = 3D0DBA9CF56E4446E51B44FD /* THIRD_PARTY_NOTICES.md */; };
 		E54CBB37B6550AA49076BF51 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9ACB88755BA3FB230336DA92 /* Security.framework */; };
 		E990E0C856EE7C318D0ADE47 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D144154FDAC60A77A90AC0 /* AboutView.swift */; };
 		E9C26137A480E092E7505E8F /* TapSensitivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */; };
 		EE73B2A43272F81582BFE6F6 /* TapClassifierTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D39DCACC50DA25D278BBFA /* TapClassifierTests.swift */; };
 		F1291EC9D6F9AF6CE4ED4C90 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = C5519916BCD0BD5B3FA76EE4 /* IOKit.framework */; };
+		F353C5475D6FE2DA74AE059C /* MissionControlController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */; };
+		FA3B4EE8BAF70FC010512D78 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D144154FDAC60A77A90AC0 /* AboutView.swift */; };
+		FB3F79AB2CB60A30B42E50A4 /* Slaptop-icon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 6679059206F0F8AAD01B38DF /* Slaptop-icon.icon */; };
 		FC13717A43326BE690B435F5 /* MotionFeatureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307D456250031D6388F6813E /* MotionFeatureDetector.swift */; };
 /* End PBXBuildFile section */
 
@@ -86,16 +118,19 @@
 		090BB54D9EFE531CA6A92425 /* SPUHIDMotionSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPUHIDMotionSensor.swift; sourceTree = "<group>"; };
 		0BC90A39CC9320E3E5C55F2F /* guru.am.slaptop.sensor-daemon.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "guru.am.slaptop.sensor-daemon.plist"; sourceTree = "<group>"; };
 		0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapSensitivity.swift; sourceTree = "<group>"; };
+		1B2661FBBC16A2DE73EFC340 /* SandboxSensorServiceController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SandboxSensorServiceController.swift; sourceTree = "<group>"; };
 		1FC63B79D14BAC461DA3BA48 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapClassifier.swift; sourceTree = "<group>"; };
 		2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapTiming.swift; sourceTree = "<group>"; };
 		307D456250031D6388F6813E /* MotionFeatureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionFeatureDetector.swift; sourceTree = "<group>"; };
 		33DF5E6852E600D7A9EA3709 /* TapKeyBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapKeyBinding.swift; sourceTree = "<group>"; };
+		3640852C6DE0CC75A8725F2B /* SlaptopAppStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SlaptopAppStore.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		381C426C4DD3A0123AE5DC08 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactFeatures.swift; sourceTree = "<group>"; };
 		3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMonitoringPolicy.swift; sourceTree = "<group>"; };
 		3C55AF8AB486CF4A3C89148F /* MissionControlController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissionControlController.swift; sourceTree = "<group>"; };
 		3C5A9E57B2241CA2B70B3931 /* ActivationPreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivationPreference.swift; sourceTree = "<group>"; };
+		3D0DBA9CF56E4446E51B44FD /* THIRD_PARTY_NOTICES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = THIRD_PARTY_NOTICES.md; sourceTree = "<group>"; };
 		3DF4A09ECCC5D57B8BB1BC82 /* SlaptopTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SlaptopTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		40EA233EA044111039538D74 /* SlaptopSensorDaemon */ = {isa = PBXFileReference; includeInIndex = 0; path = SlaptopSensorDaemon; sourceTree = BUILT_PRODUCTS_DIR; };
 		45C3F5F13E9AD25B9B3C47BD /* Slaptop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Slaptop.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -105,10 +140,12 @@
 		6679059206F0F8AAD01B38DF /* Slaptop-icon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = "Slaptop-icon.icon"; sourceTree = "<group>"; };
 		68A0171A917107C2285ED4F5 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		70858EA27D82F058BCFDA8EC /* LaptopTapAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaptopTapAnimationView.swift; sourceTree = "<group>"; };
+		759650707851F527BF5844E5 /* SensorDataConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorDataConstants.swift; sourceTree = "<group>"; };
 		78D144154FDAC60A77A90AC0 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		78D39DCACC50DA25D278BBFA /* TapClassifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapClassifierTests.swift; sourceTree = "<group>"; };
 		7B9EAA048E3B55329CF729A1 /* SensorDaemon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorDaemon.swift; sourceTree = "<group>"; };
 		7E1BD5637F5F11231EEE86A0 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		868B9096294EFDF3E055497D /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		8708430F7BDF572D1CF4F2B1 /* CodeSignatureValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSignatureValidator.swift; sourceTree = "<group>"; };
 		8ED3BAFA8BD2DE5F9A54C290 /* NSLock+WithLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSLock+WithLock.swift"; sourceTree = "<group>"; };
 		9505F5BFF978FAABAE029271 /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -124,6 +161,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		7DBE0E0BCBFDAC7DBA856F8E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1611E64C1AAF68EE6C6D18BF /* IOKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A434B04A67C494AD791A566F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -165,6 +210,7 @@
 			isa = PBXGroup;
 			children = (
 				307D456250031D6388F6813E /* MotionFeatureDetector.swift */,
+				759650707851F527BF5844E5 /* SensorDataConstants.swift */,
 				02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */,
 				0CD716A0FA8D277DDEE26B09 /* TapSensitivity.swift */,
 				2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */,
@@ -184,9 +230,12 @@
 		387009AE6163E612C8F43FDF = {
 			isa = PBXGroup;
 			children = (
+				868B9096294EFDF3E055497D /* LICENSE */,
+				3D0DBA9CF56E4446E51B44FD /* THIRD_PARTY_NOTICES.md */,
 				0F92DF1445F2045E5148BACC /* Resources */,
 				175B1A9C3E75D7C9FE8C6EAB /* Shared */,
 				DB4868EB04BDB647948BA149 /* Slaptop */,
+				A3F0A55B0D15B769D16A2BD6 /* SlaptopAppStore */,
 				7EB9D89A9711D60BEFAC5F14 /* SlaptopSensorDaemon */,
 				201AED97F36CD45F14B1C2E4 /* SlaptopTests */,
 				EDFDBE2BB051C28A604634B2 /* Frameworks */,
@@ -234,10 +283,19 @@
 			isa = PBXGroup;
 			children = (
 				45C3F5F13E9AD25B9B3C47BD /* Slaptop.app */,
+				3640852C6DE0CC75A8725F2B /* SlaptopAppStore.app */,
 				40EA233EA044111039538D74 /* SlaptopSensorDaemon */,
 				3DF4A09ECCC5D57B8BB1BC82 /* SlaptopTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A3F0A55B0D15B769D16A2BD6 /* SlaptopAppStore */ = {
+			isa = PBXGroup;
+			children = (
+				1B2661FBBC16A2DE73EFC340 /* SandboxSensorServiceController.swift */,
+			);
+			path = SlaptopAppStore;
 			sourceTree = "<group>";
 		};
 		AD679DAC543315DA7B1AD154 /* App */ = {
@@ -347,6 +405,25 @@
 			productReference = 40EA233EA044111039538D74 /* SlaptopSensorDaemon */;
 			productType = "com.apple.product-type.tool";
 		};
+		A37B28ED73E7541D2F54981E /* SlaptopAppStore */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FFBDA16DEFE9A9058DB0EB04 /* Build configuration list for PBXNativeTarget "SlaptopAppStore" */;
+			buildPhases = (
+				726219B2A02378B995A0F0A4 /* Sources */,
+				E16A4F01F4885669008A8595 /* Resources */,
+				7DBE0E0BCBFDAC7DBA856F8E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SlaptopAppStore;
+			packageProductDependencies = (
+			);
+			productName = SlaptopAppStore;
+			productReference = 3640852C6DE0CC75A8725F2B /* SlaptopAppStore.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -368,6 +445,10 @@
 						DevelopmentTeam = 59A594LZGR;
 						ProvisioningStyle = Automatic;
 					};
+					A37B28ED73E7541D2F54981E = {
+						DevelopmentTeam = 59A594LZGR;
+						ProvisioningStyle = Automatic;
+					};
 				};
 			};
 			buildConfigurationList = A14D0BA139005882D1E85DB7 /* Build configuration list for PBXProject "Slaptop" */;
@@ -386,6 +467,7 @@
 			targets = (
 				9A6B74D23E0D10756D48865A /* SlaptopSensorDaemon */,
 				25D39AC72A0B2D5E8689E19F /* Slaptop */,
+				A37B28ED73E7541D2F54981E /* SlaptopAppStore */,
 				0DF769C6264DCB67C1D0740C /* SlaptopTests */,
 			);
 		};
@@ -397,6 +479,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				62D95986608308D9FBD678F1 /* Slaptop-icon.icon in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E16A4F01F4885669008A8595 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				63AE0A5EFE42D1F5392502DF /* LICENSE in Resources */,
+				FB3F79AB2CB60A30B42E50A4 /* Slaptop-icon.icon in Resources */,
+				E0455BAC4851740E720E71C6 /* THIRD_PARTY_NOTICES.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -446,6 +538,7 @@
 				FC13717A43326BE690B435F5 /* MotionFeatureDetector.swift in Sources */,
 				95ECEAA821EC855618CC6D37 /* NativeVerticalScrollView.swift in Sources */,
 				D8010BBC2A22BADFCC462532 /* SensorChartScale.swift in Sources */,
+				20DABB2071F78B7F12672147 /* SensorDataConstants.swift in Sources */,
 				3394391FADD57FD704586661 /* SensorDataView.swift in Sources */,
 				16829FA25630C16629E91635 /* SensorMonitoringPolicy.swift in Sources */,
 				1C86FB2641866707BBB05626 /* SensorServiceController.swift in Sources */,
@@ -468,6 +561,39 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		726219B2A02378B995A0F0A4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FA3B4EE8BAF70FC010512D78 /* AboutView.swift in Sources */,
+				B659B223984C27213C139FB8 /* ActivationPreference.swift in Sources */,
+				340BF7F7473B1944B450CC73 /* AppDelegate.swift in Sources */,
+				4916D3BEF4D78A05F16AA4E1 /* AppModel.swift in Sources */,
+				286248B775B522CC3A8E2D0E /* AppVersion.swift in Sources */,
+				CEA0D50F210D8D30AA3FF564 /* FirstLaunchView.swift in Sources */,
+				6C9D2B7B493222F532E9F788 /* ImpactFeatures.swift in Sources */,
+				3B843ABFDC980987A80B459B /* LaptopTapAnimationView.swift in Sources */,
+				7F5F23C10505B0F926048C97 /* LiveSensorSample.swift in Sources */,
+				1675D5FA5C1F98BC93D72069 /* MenuBarView.swift in Sources */,
+				F353C5475D6FE2DA74AE059C /* MissionControlController.swift in Sources */,
+				9F560030E96A851918944886 /* MotionFeatureDetector.swift in Sources */,
+				C29E086DC49F8A84243C04AB /* NSLock+WithLock.swift in Sources */,
+				97D655E90B9E244A4887048A /* NativeVerticalScrollView.swift in Sources */,
+				DC17163C59C2CD1962A8029E /* SPUHIDMotionSensor.swift in Sources */,
+				90F919EBE749CC326755ED2C /* SandboxSensorServiceController.swift in Sources */,
+				B4AD86B7AD7257B302837E85 /* SensorChartScale.swift in Sources */,
+				C91F529AAF13FD727AC6A060 /* SensorDataConstants.swift in Sources */,
+				075D420ED1BAA4942EEFDE91 /* SensorDataView.swift in Sources */,
+				84B58F8B6C827FA688F349CE /* SensorMonitoringPolicy.swift in Sources */,
+				D777484639713D782A51637E /* SettingsView.swift in Sources */,
+				9D6B6A6FCE0B8D4F6DE60285 /* SlaptopApp.swift in Sources */,
+				B2A15642186B419A5F4D0799 /* TapClassifier.swift in Sources */,
+				4436719C428FDD9FA9236CD4 /* TapKeyBinding.swift in Sources */,
+				9704D06E2761D6B7ABFCD40C /* TapSensitivity.swift in Sources */,
+				72DA783B2D7683FAA04B1252 /* TapTiming.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		A88B544D685DDBF5701E50BD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -477,6 +603,7 @@
 				BBB2CC888C959D82B93973E3 /* NSLock+WithLock.swift in Sources */,
 				58DDE41D68E72387807AC065 /* SPUHIDMotionSensor.swift in Sources */,
 				D802017C99FF350E0020DBBE /* SensorDaemon.swift in Sources */,
+				21C5DBF8B82F423D566F9CF8 /* SensorDataConstants.swift in Sources */,
 				AD4C93760A8899E60D68ED2F /* SensorXPCProtocol.swift in Sources */,
 				E9C26137A480E092E7505E8F /* TapSensitivity.swift in Sources */,
 				86588A2689E68A6B74B95CB7 /* TapTiming.swift in Sources */,
@@ -703,6 +830,28 @@
 			};
 			name = Debug;
 		};
+		8A5D876D4B94FF520F75C1DE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Slaptop-icon";
+				CODE_SIGN_ENTITLEMENTS = Distribution/SlaptopAppStore.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				INFOPLIST_FILE = "Resources/SlaptopAppStore-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop;
+				PRODUCT_MODULE_NAME = SlaptopAppStore;
+				PRODUCT_NAME = Slaptop;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) APP_STORE";
+			};
+			name = Debug;
+		};
 		8EF9B2D55997E0E7932F917D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -720,6 +869,28 @@
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Slaptop.app/Contents/MacOS/Slaptop";
 			};
 			name = Debug;
+		};
+		9382945805D18F1E81C3A933 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Slaptop-icon";
+				CODE_SIGN_ENTITLEMENTS = Distribution/SlaptopAppStore.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_APP_SANDBOX = YES;
+				INFOPLIST_FILE = "Resources/SlaptopAppStore-Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop;
+				PRODUCT_MODULE_NAME = SlaptopAppStore;
+				PRODUCT_NAME = Slaptop;
+				SDKROOT = macosx;
+				SKIP_INSTALL = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) APP_STORE";
+			};
+			name = Release;
 		};
 		BA318BBC62174E51021A0D11 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -774,6 +945,15 @@
 			buildConfigurations = (
 				79654B52B7F6EC976145F778 /* Debug */,
 				1B382CA67263CCF64D274B67 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		FFBDA16DEFE9A9058DB0EB04 /* Build configuration list for PBXNativeTarget "SlaptopAppStore" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8A5D876D4B94FF520F75C1DE /* Debug */,
+				9382945805D18F1E81C3A933 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

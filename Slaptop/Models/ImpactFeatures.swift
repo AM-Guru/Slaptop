@@ -4,7 +4,7 @@
 import Foundation
 
 struct ImpactFeatures: Equatable {
-    static let expectedCount = SensorServiceConstants.featureCount
+    static let expectedCount = SensorDataConstants.featureCount
 
     let values: [Double]
 

@@ -48,6 +48,14 @@ final class MissionControlController {
             .path == installedApplicationPath
     }
 
+    /// Opens the source and destination folders needed to install a copy that
+    /// was launched directly from the disk image. Service Management cannot
+    /// register Slaptop's daemon from a transient `/Volumes` path.
+    static func showInstallationFolders() {
+        NSWorkspace.shared.open(URL(fileURLWithPath: "/Applications", isDirectory: true))
+        NSWorkspace.shared.activateFileViewerSelecting([Bundle.main.bundleURL])
+    }
+
     static var isAccessibilityTrusted: Bool {
         AXIsProcessTrusted()
     }

@@ -105,6 +105,31 @@ expect_equal \
   "$(plist_value CFBundleIdentifier "${GITHUB_WORKSPACE}/Resources/Slaptop-Info.plist")" \
   "${EXPECTED_APP_BUNDLE_ID}"
 expect_equal \
+  "app category" \
+  "$(plist_value LSApplicationCategoryType "${GITHUB_WORKSPACE}/Resources/Slaptop-Info.plist")" \
+  "public.app-category.utilities"
+expect_equal \
+  "App Store Info.plist bundle identifier" \
+  "$(plist_value CFBundleIdentifier "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
+  "${EXPECTED_APP_BUNDLE_ID}"
+expect_equal \
+  "App Store category" \
+  "$(plist_value LSApplicationCategoryType "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
+  "public.app-category.utilities"
+expect_equal \
+  "App Store sandbox entitlement" \
+  "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements")" \
+  "true"
+expect_equal \
+  "App Store IOKit exception" \
+  "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:0' "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements")" \
+  "IOHIDLibUserClient"
+if /usr/libexec/PlistBuddy \
+  -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:1' \
+  "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements" >/dev/null 2>&1; then
+  fail "App Store target contains an unexpected additional IOKit exception"
+fi
+expect_equal \
   "launch daemon label" \
   "$(plist_value Label "${GITHUB_WORKSPACE}/Resources/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist")" \
   "${EXPECTED_HELPER_BUNDLE_ID}"
@@ -160,7 +185,7 @@ xcodegen generate \
   --no-env \
   --quiet
 
-for target in Slaptop SlaptopSensorDaemon SlaptopTests; do
+for target in Slaptop SlaptopAppStore SlaptopSensorDaemon SlaptopTests; do
   settings_path="${VALIDATION_DIR}/${target}-settings.json"
   xcodebuild \
     -project "${VALIDATION_DIR}/Slaptop.xcodeproj" \
@@ -187,6 +212,18 @@ expect_equal \
   "Slaptop bundle identifier" \
   "$(resolved_setting "${VALIDATION_DIR}/Slaptop-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
   "${EXPECTED_APP_BUNDLE_ID}"
+expect_equal \
+  "App Store bundle identifier" \
+  "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \
+  "${EXPECTED_APP_BUNDLE_ID}"
+expect_equal \
+  "App Store sandbox build setting" \
+  "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" ENABLE_APP_SANDBOX)" \
+  "YES"
+expect_equal \
+  "App Store entitlements path" \
+  "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" CODE_SIGN_ENTITLEMENTS)" \
+  "Distribution/SlaptopAppStore.entitlements"
 expect_equal \
   "sensor helper bundle identifier" \
   "$(resolved_setting "${VALIDATION_DIR}/SlaptopSensorDaemon-settings.json" PRODUCT_BUNDLE_IDENTIFIER)" \

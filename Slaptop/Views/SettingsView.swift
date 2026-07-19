@@ -6,12 +6,16 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var model: AppModel
+    #if !APP_STORE
     @ObservedObject var updater: AppUpdater
+    #endif
     let showSensorData: () -> Void
 
     init(model: AppModel, showSensorData: @escaping () -> Void = {}) {
         self.model = model
+        #if !APP_STORE
         self.updater = model.updater
+        #endif
         self.showSensorData = showSensorData
     }
 
@@ -25,8 +29,10 @@ struct SettingsView: View {
                     detectionSection
                     calibrationSection
                     mappingSection
+                    #if !APP_STORE
                     updatesSection
                     advancedSection
+                    #endif
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -67,21 +73,42 @@ struct SettingsView: View {
     private var permissionsSection: some View {
         SettingsSection(title: "Permissions", symbol: "checkmark.shield") {
             StatusRow(
-                title: "Motion sensor helper",
-                value: model.helperAuthorization.label,
-                isReady: model.helperAuthorization == .enabled
+                title: motionSensorTitle,
+                value: motionSensorStatus,
+                isReady: model.isInstalledInApplications && model.helperAuthorization == .enabled
             ) {
+                #if APP_STORE
+                EmptyView()
+                #else
                 HStack(spacing: 8) {
-                    if model.helperAuthorization != .enabled {
-                        Button("Request Access") {
-                            model.requestSensorPermission()
+                    if !model.isInstalledInApplications || model.helperAuthorization != .enabled {
+                        Button {
+                            if model.isInstalledInApplications {
+                                model.requestSensorPermission()
+                            } else {
+                                model.installInApplications()
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                if model.isInstallingApplication {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                }
+                                Text(model.isInstalledInApplications
+                                    ? "Request Access"
+                                    : (model.isInstallingApplication ? "Moving…" : "Move to Applications"))
+                            }
                         }
+                        .disabled(model.isInstallingApplication)
                     }
-                    Button("Open Login Items") {
-                        model.openBackgroundItemSettings()
+                    if model.isInstalledInApplications {
+                        Button("Open Login Items") {
+                            model.openBackgroundItemSettings()
+                        }
                     }
                 }
                 .controlSize(.small)
+                #endif
             }
 
             StatusRow(
@@ -97,7 +124,7 @@ struct SettingsView: View {
                 }
             }
 
-            Text("The motion sensor helper reads display taps. Accessibility access lets Slaptop press the Mission Control and Spaces shortcuts configured under Space Mapping (defaults: ⌃←, ⌃→, and ⌃↑).")
+            Text(motionSensorDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -272,6 +299,7 @@ struct SettingsView: View {
         }
     }
 
+    #if !APP_STORE
     private var updatesSection: some View {
         SettingsSection(title: "Software updates", symbol: "arrow.down.circle") {
             HStack {
@@ -329,6 +357,35 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+    #endif
+
+    private var motionSensorTitle: String {
+        #if APP_STORE
+        "Motion sensor (sandboxed)"
+        #else
+        "Motion sensor helper"
+        #endif
+    }
+
+    private var motionSensorDescription: String {
+        #if APP_STORE
+        "Slaptop reads display taps in-process inside App Sandbox; it installs no privileged helper. Accessibility access lets Slaptop press the Mission Control and Spaces shortcuts configured under Space Mapping (defaults: ⌃←, ⌃→, and ⌃↑)."
+        #else
+        model.isInstalledInApplications
+            ? "The motion sensor helper reads display taps. Accessibility access lets Slaptop press the Mission Control and Spaces shortcuts configured under Space Mapping (defaults: ⌃←, ⌃→, and ⌃↑)."
+            : "App is not running from the /Applications folder. Move it there before requesting motion sensor access; Slaptop can copy itself and reopen the installed version automatically."
+        #endif
+    }
+
+    private var motionSensorStatus: String {
+        #if APP_STORE
+        model.helperAuthorization.label
+        #else
+        model.isInstalledInApplications
+            ? model.helperAuthorization.label
+            : (model.isInstallingApplication ? "Moving…" : "Not in Applications")
+        #endif
     }
 
     private var sensitivityLabel: String {

@@ -6,8 +6,6 @@ import Foundation
 enum SensorServiceConstants {
     static let machServiceName = "guru.am.slaptop.sensor-daemon"
     static let daemonPlistName = "guru.am.slaptop.sensor-daemon.plist"
-    static let featureCount = 6
-    static let telemetryVectorCount = 3
 }
 
 /// Calls made by the menu bar app into the privileged sensor daemon.

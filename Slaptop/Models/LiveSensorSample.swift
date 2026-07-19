@@ -9,7 +9,7 @@ struct SensorAxes: Equatable {
     let z: Double
 
     init?(_ numbers: [NSNumber]) {
-        guard numbers.count == SensorServiceConstants.telemetryVectorCount else { return nil }
+        guard numbers.count == SensorDataConstants.telemetryVectorCount else { return nil }
         let values = numbers.map(\.doubleValue)
         guard values.allSatisfy(\.isFinite) else { return nil }
         x = values[0]

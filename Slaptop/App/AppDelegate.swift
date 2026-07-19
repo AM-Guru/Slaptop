@@ -46,7 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         updateStatusItem()
         // Scheduled here rather than in AppModel's initializer so unit tests
         // constructing models never start network activity.
+        #if !APP_STORE
         model.updater.startAutomaticChecks()
+        #endif
 
         modelObservation = Publishers.CombineLatest(model.$isEnabled, model.$isSensorLoggingEnabled)
             .removeDuplicates { previous, current in

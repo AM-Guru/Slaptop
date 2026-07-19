@@ -12,9 +12,9 @@ final class MenuBarViewModel: ObservableObject {
     @Published private(set) var lastTapSide: TapSide?
     @Published private(set) var lastTapTriggeredAction: Bool
     @Published private(set) var tapDirection: TapDirectionPreference
-    /// Non-nil while an update check/download is in flight or has a result to
-    /// show; drives the caption under the menu rows.
+    #if !APP_STORE
     @Published private(set) var updateStatus: String?
+    #endif
 
     private let model: AppModel
 
@@ -33,16 +33,19 @@ final class MenuBarViewModel: ObservableObject {
         model.$lastTapSide.removeDuplicates().assign(to: &$lastTapSide)
         model.$lastTapTriggeredAction.removeDuplicates().assign(to: &$lastTapTriggeredAction)
         model.$tapDirection.removeDuplicates().assign(to: &$tapDirection)
+        #if !APP_STORE
         model.updater.$phase
             .map(Self.updateStatusText(for:))
             .removeDuplicates()
             .assign(to: &$updateStatus)
+        #endif
     }
 
     func toggleEnabled() {
         model.toggleEnabled()
     }
 
+    #if !APP_STORE
     func checkForUpdates() {
         model.updater.checkForUpdates()
     }
@@ -65,6 +68,7 @@ final class MenuBarViewModel: ObservableObject {
             return message
         }
     }
+    #endif
 }
 
 struct MenuBarView: View {
@@ -138,21 +142,25 @@ struct MenuBarView: View {
 
             VStack(spacing: 2) {
                 MenuBarRow(title: "Settings…", symbol: "slider.horizontal.3", action: showSettings)
+                #if !APP_STORE
                 MenuBarRow(
                     title: "Check for Updates…",
                     symbol: "arrow.down.circle",
                     action: viewModel.checkForUpdates
                 )
+                #endif
                 MenuBarRow(title: "About Slaptop…", symbol: "info.circle", action: showAbout)
                 MenuBarRow(title: "Quit Slaptop", symbol: "power", action: quit)
             }
 
+            #if !APP_STORE
             if let updateStatus = viewModel.updateStatus {
                 Text(updateStatus)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            #endif
         }
         .padding(16)
         .frame(width: 300)

@@ -43,6 +43,177 @@ enum AppUpdateError: LocalizedError {
     }
 }
 
+enum ApplicationInstallationOutcome: Equatable {
+    case installed
+    case existingInstallation
+}
+
+enum ApplicationInstallationError: LocalizedError {
+    case invalidSource
+    case existingApplicationIsNotSlaptop
+    case copyFailed(String)
+    case copiedApplicationFailedValidation
+    case relaunchFailed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidSource:
+            return "This copy of Slaptop could not be validated."
+        case .existingApplicationIsNotSlaptop:
+            return "A different or damaged Slaptop.app already exists in Applications."
+        case let .copyFailed(detail):
+            return "Slaptop could not be copied to Applications: \(detail)"
+        case .copiedApplicationFailedValidation:
+            return "The copy in Applications did not pass code-signature validation."
+        case let .relaunchFailed(detail):
+            return "Slaptop was installed, but could not be reopened: \(detail)"
+        }
+    }
+}
+
+/// Safely installs the currently running bundle without replacing an existing
+/// application. The copy is staged on the destination volume and must match
+/// the source bundle's identifier, build, and designated code requirement
+/// before it is atomically moved into place.
+enum AppInstallationManager {
+    static let installedApplicationURL = URL(
+        fileURLWithPath: MissionControlController.installedApplicationPath,
+        isDirectory: true
+    )
+
+    static func installCurrentApplication(
+        from sourceURL: URL = Bundle.main.bundleURL,
+        to destinationURL: URL = installedApplicationURL
+    ) throws -> ApplicationInstallationOutcome {
+        let fileManager = FileManager.default
+        let standardizedSource = sourceURL.standardizedFileURL.resolvingSymlinksInPath()
+        let standardizedDestination = destinationURL.standardizedFileURL.resolvingSymlinksInPath()
+
+        if standardizedSource == standardizedDestination {
+            return .existingInstallation
+        }
+
+        if fileManager.fileExists(atPath: destinationURL.path) {
+            guard application(at: destinationURL, matchesSignerOf: sourceURL, requireSameBuild: false) else {
+                throw ApplicationInstallationError.existingApplicationIsNotSlaptop
+            }
+            return .existingInstallation
+        }
+
+        guard application(at: sourceURL, matchesSignerOf: sourceURL, requireSameBuild: true) else {
+            throw ApplicationInstallationError.invalidSource
+        }
+
+        let stagingURL = destinationURL
+            .deletingLastPathComponent()
+            .appendingPathComponent(".Slaptop-installing-\(UUID().uuidString).app", isDirectory: true)
+        defer { try? fileManager.removeItem(at: stagingURL) }
+
+        try runDitto(from: sourceURL, to: stagingURL)
+        guard application(at: stagingURL, matchesSignerOf: sourceURL, requireSameBuild: true) else {
+            throw ApplicationInstallationError.copiedApplicationFailedValidation
+        }
+
+        do {
+            try fileManager.moveItem(at: stagingURL, to: destinationURL)
+        } catch {
+            throw ApplicationInstallationError.copyFailed(error.localizedDescription)
+        }
+
+        guard application(at: destinationURL, matchesSignerOf: sourceURL, requireSameBuild: true) else {
+            // This destination was created by this installation attempt, so
+            // removing an invalid result cannot destroy a pre-existing app.
+            try? fileManager.removeItem(at: destinationURL)
+            throw ApplicationInstallationError.copiedApplicationFailedValidation
+        }
+        return .installed
+    }
+
+    @MainActor
+    static func relaunchInstalledApplication() throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/bin/sh")
+        process.arguments = [
+            "-c",
+            "sleep 1; /usr/bin/open \"\(MissionControlController.installedApplicationPath)\"",
+        ]
+        do {
+            try process.run()
+        } catch {
+            throw ApplicationInstallationError.relaunchFailed(error.localizedDescription)
+        }
+        NSApplication.shared.terminate(nil)
+    }
+
+    private static func runDitto(from sourceURL: URL, to destinationURL: URL) throws {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/ditto")
+        process.arguments = [sourceURL.path, destinationURL.path]
+        let standardError = Pipe()
+        process.standardError = standardError
+
+        do {
+            try process.run()
+        } catch {
+            throw ApplicationInstallationError.copyFailed(error.localizedDescription)
+        }
+        process.waitUntilExit()
+
+        guard process.terminationStatus == 0 else {
+            let detail = String(
+                data: standardError.fileHandleForReading.readDataToEndOfFile(),
+                encoding: .utf8
+            )?.trimmingCharacters(in: .whitespacesAndNewlines)
+            throw ApplicationInstallationError.copyFailed(
+                detail?.isEmpty == false ? detail! : "exit status \(process.terminationStatus)"
+            )
+        }
+    }
+
+    private static func application(
+        at candidateURL: URL,
+        matchesSignerOf sourceURL: URL,
+        requireSameBuild: Bool
+    ) -> Bool {
+        guard
+            let sourceBundle = Bundle(url: sourceURL),
+            let candidateBundle = Bundle(url: candidateURL),
+            sourceBundle.bundleIdentifier == "guru.am.slaptop",
+            candidateBundle.bundleIdentifier == sourceBundle.bundleIdentifier,
+            !requireSameBuild
+                || candidateBundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+                    == sourceBundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+        else { return false }
+
+        var sourceCode: SecStaticCode?
+        guard
+            SecStaticCodeCreateWithPath(sourceURL as CFURL, [], &sourceCode) == errSecSuccess,
+            let sourceCode
+        else { return false }
+
+        var requirement: SecRequirement?
+        guard
+            SecCodeCopyDesignatedRequirement(sourceCode, [], &requirement) == errSecSuccess,
+            let requirement
+        else { return false }
+
+        var candidateCode: SecStaticCode?
+        guard
+            SecStaticCodeCreateWithPath(candidateURL as CFURL, [], &candidateCode) == errSecSuccess,
+            let candidateCode
+        else { return false }
+
+        let flags = SecCSFlags(
+            rawValue: kSecCSCheckAllArchitectures
+                | kSecCSCheckNestedCode
+                | kSecCSStrictValidate
+                | kSecCSRestrictSymlinks
+                | kSecCSRestrictToAppLike
+        )
+        return SecStaticCodeCheckValidity(candidateCode, flags, requirement) == errSecSuccess
+    }
+}
+
 @MainActor
 final class AppUpdater: ObservableObject {
     enum Phase: Equatable {
@@ -174,7 +345,8 @@ final class AppUpdater: ObservableObject {
 
         do {
             let release = try await Self.fetchLatestRelease()
-            guard release.buildNumber > Self.currentBuildNumber else {
+            let installedBuildNumber = Self.currentBuildNumber
+            guard release.buildNumber > installedBuildNumber else {
                 phase = .upToDate
                 return
             }
@@ -187,7 +359,11 @@ final class AppUpdater: ObservableObject {
             let dmgURL = try await Self.download(release.dmgURL)
             phase = .installing(tag: release.tag)
             try await Task.detached(priority: .userInitiated) {
-                try AppUpdateInstaller.install(dmgAt: dmgURL)
+                try AppUpdateInstaller.install(
+                    dmgAt: dmgURL,
+                    expectedBuildNumber: release.buildNumber,
+                    replacingBuildNumber: installedBuildNumber
+                )
             }.value
             Self.relaunchInstalledApplication()
         } catch {
@@ -277,26 +453,45 @@ final class AppUpdater: ObservableObject {
     }
 }
 
-/// Filesystem side of an update: mount the disk image, verify the replacement
-/// app's code signature, swap it into /Applications, and clean up.
+/// Filesystem side of an update: authenticate the disk image before mounting,
+/// verify the replacement app, swap it into /Applications, validate the copy,
+/// and clean up.
 enum AppUpdateInstaller {
-    /// The update must be Slaptop, signed by this project's team. Verified
-    /// against the downloaded bundle before anything is replaced.
-    private static let signatureRequirement = "anchor apple generic"
+    /// Apple's Developer ID Application certificate requirements from TN3127,
+    /// pinned to Slaptop's identifier and team.
+    private static let applicationSignatureRequirement = "anchor apple generic"
         + " and identifier \"guru.am.slaptop\""
+        + " and certificate 1[field.1.2.840.113635.100.6.2.6] exists"
+        + " and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"
         + " and certificate leaf[subject.OU] = \"59A594LZGR\""
 
-    static func install(dmgAt dmgURL: URL) throws {
+    /// The release workflow signs Slaptop.dmg with the same Developer ID
+    /// Application identity. Checking this before hdiutil keeps unauthenticated
+    /// filesystem data away from the disk-image parser.
+    private static let diskImageSignatureRequirement = "anchor apple generic"
+        + " and identifier \"Slaptop\""
+        + " and certificate 1[field.1.2.840.113635.100.6.2.6] exists"
+        + " and certificate leaf[field.1.2.840.113635.100.6.1.13] exists"
+        + " and certificate leaf[subject.OU] = \"59A594LZGR\""
+
+    static func install(
+        dmgAt dmgURL: URL,
+        expectedBuildNumber: Int,
+        replacingBuildNumber: Int
+    ) throws {
+        guard expectedBuildNumber > replacingBuildNumber else {
+            throw AppUpdateError.installFailed(
+                "build \(expectedBuildNumber) is not newer than installed build \(replacingBuildNumber)"
+            )
+        }
+
         let fileManager = FileManager.default
         let mountPoint = fileManager.temporaryDirectory
             .appendingPathComponent("Slaptop-update-mount-\(UUID().uuidString)")
         try fileManager.createDirectory(at: mountPoint, withIntermediateDirectories: true)
 
-        try run(
-            "/usr/bin/hdiutil",
-            ["attach", dmgURL.path, "-nobrowse", "-readonly", "-mountpoint", mountPoint.path, "-quiet"],
-            failure: { AppUpdateError.installFailed("could not open the update image: \($0)") }
-        )
+        // Always remove the downloaded image, including when authentication
+        // fails before it is mounted.
         defer {
             _ = try? run("/usr/bin/hdiutil", ["detach", mountPoint.path, "-quiet"]) {
                 AppUpdateError.installFailed($0)
@@ -305,11 +500,18 @@ enum AppUpdateInstaller {
             try? fileManager.removeItem(at: dmgURL)
         }
 
+        try validateDiskImage(dmgURL)
+        try run(
+            "/usr/bin/hdiutil",
+            ["attach", dmgURL.path, "-nobrowse", "-readonly", "-mountpoint", mountPoint.path, "-quiet"],
+            failure: { AppUpdateError.installFailed("could not open the update image: \($0)") }
+        )
+
         let replacementApp = mountPoint.appendingPathComponent("Slaptop.app")
         guard fileManager.fileExists(atPath: replacementApp.path) else {
             throw AppUpdateError.installFailed("the update image does not contain Slaptop.app")
         }
-        try validateSignature(of: replacementApp)
+        try validateApplication(replacementApp, expectedBuildNumber: expectedBuildNumber)
 
         let installedURL = URL(fileURLWithPath: MissionControlController.installedApplicationPath)
         let previousURL = fileManager.temporaryDirectory
@@ -321,6 +523,9 @@ enum AppUpdateInstaller {
                 [replacementApp.path, installedURL.path],
                 failure: { AppUpdateError.installFailed("could not copy the new version: \($0)") }
             )
+            // Validate the bytes at their final path. This catches a failed or
+            // altered copy before the known-good application is discarded.
+            try validateApplication(installedURL, expectedBuildNumber: expectedBuildNumber)
         } catch {
             // Roll the previous version back so the user is never left
             // without an installed app.
@@ -331,29 +536,131 @@ enum AppUpdateInstaller {
         try? fileManager.removeItem(at: previousURL)
     }
 
-    static func validateSignature(of applicationURL: URL) throws {
+    private static func validateDiskImage(_ dmgURL: URL) throws {
+        try validateSignature(
+            of: dmgURL,
+            requirementText: diskImageSignatureRequirement,
+            flags: SecCSFlags(rawValue: kSecCSStrictValidate),
+            rejectionMessage: "the update image is not signed with Slaptop's Developer ID Application certificate"
+        )
+        try assessWithGatekeeper(
+            dmgURL,
+            arguments: ["-a", "-t", "open", "--context", "context:primary-signature"],
+            rejectionMessage: "the update image is not notarized for distribution"
+        )
+    }
+
+    static func validateApplication(_ applicationURL: URL, expectedBuildNumber: Int) throws {
+        let flags = SecCSFlags(
+            rawValue: kSecCSCheckAllArchitectures
+                | kSecCSCheckNestedCode
+                | kSecCSStrictValidate
+                | kSecCSRestrictSymlinks
+                | kSecCSRestrictToAppLike
+        )
+        try validateSignature(
+            of: applicationURL,
+            requirementText: applicationSignatureRequirement,
+            flags: flags,
+            rejectionMessage: "the downloaded app is not a Developer ID build of Slaptop signed by AM Guru, LLC"
+        )
+
+        let bundleBuildNumber = try buildNumber(of: applicationURL)
+        guard bundleBuildNumber == expectedBuildNumber else {
+            throw AppUpdateError.installFailed(
+                "release build \(expectedBuildNumber) contains app build \(bundleBuildNumber)"
+            )
+        }
+
+        try assessWithGatekeeper(
+            applicationURL,
+            arguments: ["-a", "-t", "exec"],
+            rejectionMessage: "the downloaded app is not accepted as a notarized application"
+        )
+    }
+
+    static func buildNumber(of applicationURL: URL) throws -> Int {
+        let infoPlistURL = applicationURL
+            .appendingPathComponent("Contents", isDirectory: true)
+            .appendingPathComponent("Info.plist", isDirectory: false)
+        let data: Data
+        do {
+            data = try Data(contentsOf: infoPlistURL, options: .mappedIfSafe)
+        } catch {
+            throw AppUpdateError.installFailed("the downloaded app has no readable Info.plist")
+        }
+
+        guard
+            let propertyList = try? PropertyListSerialization.propertyList(from: data, format: nil),
+            let dictionary = propertyList as? [String: Any],
+            let version = dictionary["CFBundleVersion"] as? String,
+            !version.isEmpty,
+            version.allSatisfy(\.isNumber),
+            let buildNumber = Int(version),
+            version == String(buildNumber)
+        else {
+            throw AppUpdateError.installFailed("the downloaded app has an invalid CFBundleVersion")
+        }
+        return buildNumber
+    }
+
+    private static func validateSignature(
+        of url: URL,
+        requirementText: String,
+        flags: SecCSFlags,
+        rejectionMessage: String
+    ) throws {
         var staticCode: SecStaticCode?
         guard
-            SecStaticCodeCreateWithPath(applicationURL as CFURL, [], &staticCode) == errSecSuccess,
+            SecStaticCodeCreateWithPath(url as CFURL, [], &staticCode) == errSecSuccess,
             let staticCode
         else {
-            throw AppUpdateError.installFailed("the downloaded app could not be inspected")
+            throw AppUpdateError.installFailed("the downloaded update could not be inspected")
         }
 
         var requirement: SecRequirement?
         guard
-            SecRequirementCreateWithString(signatureRequirement as CFString, [], &requirement) == errSecSuccess,
+            SecRequirementCreateWithString(requirementText as CFString, [], &requirement) == errSecSuccess,
             let requirement
         else {
             throw AppUpdateError.installFailed("the update signature requirement is invalid")
         }
 
-        let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSCheckNestedCode)
         guard SecStaticCodeCheckValidity(staticCode, flags, requirement) == errSecSuccess else {
+            throw AppUpdateError.installFailed(rejectionMessage)
+        }
+    }
+
+    private static func assessWithGatekeeper(
+        _ url: URL,
+        arguments: [String],
+        rejectionMessage: String
+    ) throws {
+        let rawAssessment = try run(
+            "/usr/sbin/spctl",
+            arguments + ["--raw", url.path],
+            failure: { detail in
+                AppUpdateError.installFailed("\(rejectionMessage): \(detail)")
+            }
+        )
+        guard isNotarizedGatekeeperAssessment(Data(rawAssessment.utf8)) else {
             throw AppUpdateError.installFailed(
-                "the downloaded app is not a Slaptop build signed by AM Guru, LLC"
+                "\(rejectionMessage): Gatekeeper did not report Notarized Developer ID"
             )
         }
+    }
+
+    static func isNotarizedGatekeeperAssessment(_ data: Data) -> Bool {
+        guard
+            let propertyList = try? PropertyListSerialization.propertyList(from: data, format: nil),
+            let dictionary = propertyList as? [String: Any],
+            dictionary["assessment:verdict"] as? Bool == true,
+            let authority = dictionary["assessment:authority"] as? [String: Any],
+            authority["assessment:authority:source"] as? String == "Notarized Developer ID"
+        else {
+            return false
+        }
+        return true
     }
 
     @discardableResult

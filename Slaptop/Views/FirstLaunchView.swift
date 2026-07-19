@@ -8,7 +8,11 @@ struct FirstLaunchView: View {
     let completeSetup: () -> Void
 
     private var hasRequiredPermissions: Bool {
+        #if APP_STORE
         model.helperAuthorization == .enabled
+        #else
+        model.isInstalledInApplications && model.helperAuthorization == .enabled
+        #endif
     }
 
     var body: some View {
@@ -27,17 +31,19 @@ struct FirstLaunchView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Welcome to Slaptop")
                         .font(.title2.bold())
-                    Text("Approve the motion sensor helper so display taps can travel through Mission Control Spaces.")
+                    Text(introduction)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
 
                 SetupPermissionRow(
-                    title: "Motion sensor helper",
-                    detail: "Reads display taps from AppleSPU.",
-                    status: model.helperAuthorization.label,
-                    isGranted: model.helperAuthorization == .enabled,
-                    requestPermission: model.requestSensorPermission
+                    title: motionSensorTitle,
+                    detail: motionSensorDetail,
+                    status: motionSensorStatus,
+                    isGranted: hasRequiredPermissions,
+                    actionTitle: motionSensorActionTitle,
+                    isWorking: motionSensorActionIsWorking,
+                    requestPermission: motionSensorAction
                 )
 
                 SetupPermissionRow(
@@ -45,6 +51,8 @@ struct FirstLaunchView: View {
                     detail: "Presses the Mission Control and Spaces shortcuts (defaults: ⌃←, ⌃→, and ⌃↑).",
                     status: model.isAccessibilityTrusted ? "Approved" : "Needs approval",
                     isGranted: model.isAccessibilityTrusted,
+                    actionTitle: "Request Permission",
+                    isWorking: false,
                     requestPermission: model.requestAccessibilityPermission
                 )
 
@@ -60,7 +68,7 @@ struct FirstLaunchView: View {
                 .disabled(!hasRequiredPermissions)
 
                 if !hasRequiredPermissions {
-                    Text("Travel Spaces becomes available after the motion sensor helper is approved.")
+                    Text(missingSensorMessage)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -80,6 +88,80 @@ struct FirstLaunchView: View {
             }
         }
     }
+
+    private var introduction: String {
+        #if APP_STORE
+        "Slaptop reads display taps inside App Sandbox so they can travel through Mission Control Spaces."
+        #else
+        model.isInstalledInApplications
+            ? "Approve the motion sensor helper so display taps can travel through Mission Control Spaces."
+            : "App is not running from the /Applications folder. Move it there before setting up permissions."
+        #endif
+    }
+
+    private var motionSensorTitle: String {
+        #if APP_STORE
+        "Motion sensor (sandboxed)"
+        #else
+        "Motion sensor helper"
+        #endif
+    }
+
+    private var motionSensorDetail: String {
+        #if APP_STORE
+        "Reads display taps in-process; no privileged helper is installed."
+        #else
+        model.isInstalledInApplications
+            ? "Reads display taps from AppleSPU."
+            : "The helper requires Slaptop to run from /Applications."
+        #endif
+    }
+
+    private var motionSensorStatus: String {
+        #if APP_STORE
+        model.helperAuthorization.label
+        #else
+        model.isInstalledInApplications
+            ? model.helperAuthorization.label
+            : (model.isInstallingApplication ? "Moving…" : "Not in Applications")
+        #endif
+    }
+
+    private var motionSensorActionTitle: String {
+        #if APP_STORE
+        "Request Permission"
+        #else
+        model.isInstalledInApplications ? "Request Permission" : "Move to Applications"
+        #endif
+    }
+
+    private var motionSensorActionIsWorking: Bool {
+        #if APP_STORE
+        false
+        #else
+        !model.isInstalledInApplications && model.isInstallingApplication
+        #endif
+    }
+
+    private var motionSensorAction: () -> Void {
+        #if APP_STORE
+        model.requestSensorPermission
+        #else
+        model.isInstalledInApplications
+            ? model.requestSensorPermission
+            : model.installInApplications
+        #endif
+    }
+
+    private var missingSensorMessage: String {
+        #if APP_STORE
+        "Travel Spaces requires a compatible built-in AppleSPU motion sensor."
+        #else
+        model.isInstalledInApplications
+            ? "Travel Spaces becomes available after the motion sensor helper is approved."
+            : "App is not running from the /Applications folder. Slaptop can move itself there and reopen the installed copy automatically."
+        #endif
+    }
 }
 
 private struct SetupPermissionRow: View {
@@ -87,6 +169,8 @@ private struct SetupPermissionRow: View {
     let detail: String
     let status: String
     let isGranted: Bool
+    let actionTitle: String
+    let isWorking: Bool
     let requestPermission: () -> Void
 
     var body: some View {
@@ -115,8 +199,17 @@ private struct SetupPermissionRow: View {
                     .foregroundStyle(.green)
                     .accessibilityLabel("Permission granted")
             } else {
-                Button("Request Permission", action: requestPermission)
-                    .controlSize(.small)
+                Button(action: requestPermission) {
+                    HStack(spacing: 5) {
+                        if isWorking {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                        Text(isWorking ? "Moving…" : actionTitle)
+                    }
+                }
+                .controlSize(.small)
+                .disabled(isWorking)
             }
         }
         .padding(13)

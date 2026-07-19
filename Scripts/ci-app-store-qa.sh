@@ -44,7 +44,7 @@ done
 
 work_dir="$(mktemp -d "${RUNNER_TEMP%/}/slaptop-app-store-qa.XXXXXX")"
 derived_data="${work_dir}/DerivedData"
-archive_path="${work_dir}/Slaptop.xcarchive"
+archive_path="${work_dir}/SlaptopAppStore.xcarchive"
 export_path="${work_dir}/export"
 keychain_path="${work_dir}/app-store-signing.keychain-db"
 development_p12_path="${work_dir}/apple-development.p12"
@@ -107,12 +107,16 @@ for identity in "${APP_STORE_DEVELOPMENT}" "${APP_STORE_DISTRIBUTION}"; do
   fi
 done
 
+# Secret files remain mode 0600 inside the private work directory. Build
+# products must use normal distributable modes so App Store processing can
+# read every file and traverse every directory in the installer payload.
+umask 022
 cd "${GITHUB_WORKSPACE}"
 xcodegen generate
 
 xcodebuild \
   -project Slaptop.xcodeproj \
-  -scheme Slaptop \
+  -scheme SlaptopAppStore \
   -configuration Release \
   -destination 'generic/platform=macOS' \
   -derivedDataPath "${derived_data}" \
@@ -132,14 +136,42 @@ info_plist="${app_path}/Contents/Info.plist"
 bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "${info_plist}")"
 app_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${info_plist}")"
 build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${info_plist}")"
+category="$(/usr/libexec/PlistBuddy -c 'Print :LSApplicationCategoryType' "${info_plist}")"
 [[ "${bundle_id}" == "guru.am.slaptop" ]]
 [[ "${build_number}" == "${GITHUB_RUN_NUMBER}" ]]
+[[ "${category}" == "public.app-category.utilities" ]]
 codesign --verify --deep --strict --verbose=2 "${app_path}"
 
-if ! codesign -d --entitlements :- "${app_path}" 2>/dev/null \
-  | plutil -extract com.apple.security.app-sandbox raw -o - - 2>/dev/null \
-  | grep -Fxq true; then
-  echo "::warning title=Mac App Store sandbox::The archived app is not sandboxed. Apple processing or review may reject this privileged-helper build; the upload is for internal QA only."
+entitlements_path="${work_dir}/archived-entitlements.plist"
+codesign -d --entitlements :- "${app_path}" > "${entitlements_path}" 2>/dev/null
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "${entitlements_path}")" == "true" ]]
+[[ "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:0' "${entitlements_path}")" == "IOHIDLibUserClient" ]]
+if /usr/libexec/PlistBuddy \
+  -c 'Print :com.apple.security.temporary-exception.iokit-user-client-class:1' \
+  "${entitlements_path}" >/dev/null 2>&1; then
+  echo "The App Store target contains an unexpected additional IOKit exception." >&2
+  exit 1
+fi
+
+[[ ! -e "${app_path}/Contents/Resources/SlaptopSensorDaemon" ]]
+[[ ! -e "${app_path}/Contents/Library/LaunchDaemons" ]]
+[[ -r "${app_path}/Contents/Resources/LICENSE" ]]
+[[ -r "${app_path}/Contents/Resources/THIRD_PARTY_NOTICES.md" ]]
+
+if strings "${app_path}/Contents/MacOS/Slaptop" \
+  | grep -Fq 'api.github.com/repos/AM-Guru/Slaptop/releases/latest'; then
+  echo "The App Store binary unexpectedly contains the GitHub updater." >&2
+  exit 1
+fi
+
+permission_failures="$(find "${app_path}" \( \
+  -type f ! -perm -004 -o \
+  -type d ! -perm -005 \
+\) -print)"
+if [[ -n "${permission_failures}" ]]; then
+  echo "The archived app contains paths that App Store processing cannot read:" >&2
+  echo "${permission_failures}" >&2
+  exit 1
 fi
 
 xcodebuild \

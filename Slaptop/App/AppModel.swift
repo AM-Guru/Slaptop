@@ -38,6 +38,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var isSensorRunning = false
     @Published private(set) var helperAuthorization: HelperAuthorization = .notRegistered
     @Published private(set) var isAccessibilityTrusted = false
+    #if !APP_STORE
+    @Published private(set) var isInstallingApplication = false
+    #endif
     @Published private(set) var statusMessage = "Ready to set up"
     @Published private(set) var lastTapSide: TapSide?
     @Published private(set) var lastImpactMagnitude: Double?
@@ -69,7 +72,11 @@ final class AppModel: ObservableObject {
     @Published private(set) var keyBindings: SpaceKeyBindings
 
     var isInstalledInApplications: Bool {
+        #if APP_STORE
+        true
+        #else
         MissionControlController.isInstalledApplication
+        #endif
     }
 
     var sensorDetectionThreshold: Double {
@@ -86,7 +93,9 @@ final class AppModel: ObservableObject {
     private static let maximumSensorSamples = 300
     private static let sensorChartUpdateInterval: TimeInterval = 1.0 / 8.0
     private static let calibrationArmingDelay = 0.35
+    #if !APP_STORE
     let updater = AppUpdater()
+    #endif
     private let sensorService = SensorServiceController()
     private let defaults: UserDefaults
     private let classifier: TapClassifier
@@ -108,6 +117,11 @@ final class AppModel: ObservableObject {
 
     init(defaults: UserDefaults = .standard, automaticallyEnable: Bool = true) {
         self.defaults = defaults
+        #if !DEBUG
+        // Motion-feature diagnostics were historically persisted for support.
+        // Release builds neither retain new samples nor keep the legacy ring.
+        defaults.removeObject(forKey: Self.recentImpactDiagnosticsKey)
+        #endif
         classifier = TapClassifier(defaults: defaults)
         sensitivity = Self.loadSensitivity(defaults: defaults)
         let savedTapInterval = defaults.object(forKey: Self.minimumTapIntervalKey) as? Double
@@ -246,7 +260,7 @@ final class AppModel: ObservableObject {
 
     func requestSensorPermission() {
         guard isInstalledInApplications else {
-            statusMessage = "Install Slaptop in /Applications before requesting sensor access."
+            installInApplications()
             return
         }
 
@@ -273,8 +287,50 @@ final class AppModel: ObservableObject {
         case .enabled:
             statusMessage = "Motion sensor permission granted."
         case .notFound:
-            statusMessage = "The bundled sensor helper is missing. Rebuild and move Slaptop to Applications."
+            statusMessage = unavailableSensorMessage
         }
+    }
+
+    func installInApplications() {
+        #if !APP_STORE
+        guard !isInstalledInApplications, !isInstallingApplication else { return }
+        isInstallingApplication = true
+        statusMessage = "Moving Slaptop to Applications…"
+        let sourceURL = Bundle.main.bundleURL
+
+        Task { [weak self] in
+            let result = await Task.detached(priority: .userInitiated) {
+                Result {
+                    try AppInstallationManager.installCurrentApplication(from: sourceURL)
+                }
+            }.value
+
+            guard let self else { return }
+            self.isInstallingApplication = false
+            switch result {
+            case let .success(outcome):
+                self.statusMessage = outcome == .installed
+                    ? "Slaptop was moved to Applications. Reopening the installed copy…"
+                    : "Slaptop is already in Applications. Opening the installed copy…"
+                do {
+                    try AppInstallationManager.relaunchInstalledApplication()
+                } catch {
+                    self.statusMessage = error.localizedDescription
+                    MissionControlController.showInstallationFolders()
+                }
+            case let .failure(error):
+                self.statusMessage = "\(error.localizedDescription) Move it manually, then reopen Slaptop from Applications."
+                MissionControlController.showInstallationFolders()
+            }
+        }
+        #endif
+    }
+
+    func showInstallationFolders() {
+        #if !APP_STORE
+        MissionControlController.showInstallationFolders()
+        statusMessage = "Drag Slaptop into Applications, quit this copy, then reopen Slaptop from Applications before requesting sensor access."
+        #endif
     }
 
     func openBackgroundItemSettings() {
@@ -439,7 +495,7 @@ final class AppModel: ObservableObject {
             statusMessage = approvalMessage(for: request)
         case .notFound:
             cancelMonitoringRequest(request)
-            statusMessage = "The bundled sensor helper is missing. Rebuild and move Slaptop to Applications."
+            statusMessage = unavailableSensorMessage
         case .enabled:
             if sensorService.registrationNeedsRefresh {
                 isRefreshingSensorService = true
@@ -599,6 +655,14 @@ final class AppModel: ObservableObject {
         }
     }
 
+    private var unavailableSensorMessage: String {
+        #if APP_STORE
+        "No compatible built-in AppleSPU motion sensor is available. Slaptop requires an Apple Silicon Mac with an integrated display."
+        #else
+        "The bundled sensor helper is missing. Rebuild and move Slaptop to Applications."
+        #endif
+    }
+
     private func stopSensorMonitoring(message: String) {
         sensorService.disconnect()
         isSensorRunning = false
@@ -682,11 +746,10 @@ final class AppModel: ObservableObject {
     private static let recentImpactDiagnosticsKey = "diagnostics.recentImpacts"
     private static let maximumImpactDiagnostics = 60
 
-    /// One diagnostic line per detected impact so tap signatures can be
-    /// inspected when calibration or classification misfires. Kept in a
-    /// UserDefaults ring buffer because the unified log redacts NSLog
-    /// payloads as <private>.
+    /// Debug-only diagnostic lines help inspect calibration and classification
+    /// without retaining timestamped motion features in production builds.
     private func logImpact(_ features: ImpactFeatures, magnitude: Double) {
+        #if DEBUG
         let values = features.values
         let context: String
         if case let .collecting(side, _) = calibrationState {
@@ -700,9 +763,11 @@ final class AppModel: ObservableObject {
                 context, values[0], values[1], values[2], values[3], values[4], values[5], magnitude
             )
         )
+        #endif
     }
 
     private func appendImpactDiagnostic(_ line: String) {
+        #if DEBUG
         let stamped = "\(Date().formatted(.iso8601)) \(line)"
         var recent = defaults.stringArray(forKey: Self.recentImpactDiagnosticsKey) ?? []
         recent.append(stamped)
@@ -710,6 +775,7 @@ final class AppModel: ObservableObject {
             recent.removeFirst(recent.count - Self.maximumImpactDiagnostics)
         }
         defaults.set(recent, forKey: Self.recentImpactDiagnosticsKey)
+        #endif
     }
 
     /// The learned yaw of the opposite side, used to keep left and right

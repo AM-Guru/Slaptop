@@ -29,23 +29,17 @@ final class SensorDaemon: NSObject, NSXPCListenerDelegate {
     }
 
     func listener(_ listener: NSXPCListener, shouldAcceptNewConnection connection: NSXPCConnection) -> Bool {
-        if let requirement = CodeSignatureValidator.trustedClientRequirement() {
-            // Evaluated by XPC against the peer's audit token on every
-            // message; a malformed requirement or mismatched client
-            // invalidates the connection.
-            connection.setCodeSigningRequirement(requirement)
-        } else {
-            #if DEBUG
-            // Ad-hoc signed local builds have no team identifier to pin.
-            guard CodeSignatureValidator.isTrustedSlaptopClient(connection) else {
-                NSLog("SlaptopSensorDaemon rejected an untrusted XPC client (pid %d)", connection.processIdentifier)
-                return false
-            }
-            #else
+        guard let requirement = CodeSignatureValidator.trustedClientRequirement() else {
+            // An ad-hoc signed privileged helper cannot securely distinguish
+            // Slaptop from a local process that copied its bundle identifier.
+            // Debug the helper with a real Apple Development signature.
             NSLog("SlaptopSensorDaemon has no team identifier; rejecting all clients.")
             return false
-            #endif
         }
+        // Evaluated by XPC against the peer's audit token on every message; a
+        // malformed requirement or mismatched client invalidates the
+        // connection.
+        connection.setCodeSigningRequirement(requirement)
 
         connection.exportedInterface = NSXPCInterface(with: SensorDaemonProtocol.self)
         connection.remoteObjectInterface = NSXPCInterface(with: SensorClientProtocol.self)

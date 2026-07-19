@@ -11,6 +11,7 @@ enum SPUSensorError: LocalizedError {
     case permissionDenied(IOReturn)
     case configurationFailed(IOReturn)
     case startTimedOut
+    case previousRunDidNotStop
 
     var errorDescription: String? {
         switch self {
@@ -22,6 +23,8 @@ enum SPUSensorError: LocalizedError {
             return "The AppleSPU sensor could not be configured (IOKit \(code))."
         case .startTimedOut:
             return "The AppleSPU sensor did not start in time."
+        case .previousRunDidNotStop:
+            return "The previous AppleSPU sensor session did not stop in time; restart was refused."
         }
     }
 }
@@ -40,10 +43,12 @@ final class SPUHIDMotionSensor {
     private final class CallbackContext {
         unowned let owner: SPUHIDMotionSensor
         let kind: SensorKind
+        let generation: Int
 
-        init(owner: SPUHIDMotionSensor, kind: SensorKind) {
+        init(owner: SPUHIDMotionSensor, kind: SensorKind, generation: Int) {
             self.owner = owner
             self.kind = kind
+            self.generation = generation
         }
     }
 
@@ -111,7 +116,7 @@ final class SPUHIDMotionSensor {
         // A previous thread may still be winding down after stop(); wait for
         // it so the HID devices are not opened twice and its exit cannot
         // clobber the new thread's shared state.
-        waitForPreviousThreadExit()
+        try waitForPreviousThreadExit()
 
         detector.reset()
         let exitSignal = DispatchSemaphore(value: 0)
@@ -166,18 +171,23 @@ final class SPUHIDMotionSensor {
         }
     }
 
-    private func waitForPreviousThreadExit() {
-        let (exitSignal, runLoop): (DispatchSemaphore?, CFRunLoop?) = stateLock.withLock {
-            guard sensorThread != nil else { return (nil, nil) }
+    private func waitForPreviousThreadExit() throws {
+        let (hasPreviousThread, exitSignal, runLoop): (Bool, DispatchSemaphore?, CFRunLoop?) = stateLock.withLock {
+            guard sensorThread != nil else { return (false, nil, nil) }
             shouldStop = true
-            return (sensorThreadExit, sensorRunLoop)
+            return (true, sensorThreadExit, sensorRunLoop)
         }
-        guard let exitSignal else { return }
+        guard hasPreviousThread else { return }
+        guard let exitSignal else {
+            throw SPUSensorError.previousRunDidNotStop
+        }
         if let runLoop {
             CFRunLoopStop(runLoop)
             CFRunLoopWakeUp(runLoop)
         }
-        _ = exitSignal.wait(timeout: .now() + 2)
+        guard exitSignal.wait(timeout: .now() + 2) == .success else {
+            throw SPUSensorError.previousRunDidNotStop
+        }
     }
 
     func stop() {
@@ -192,7 +202,9 @@ final class SPUHIDMotionSensor {
     }
 
     private func runSensorLoop(started semaphore: DispatchSemaphore, generation: Int) throws {
+        #if !APP_STORE
         try wakeSensorDrivers()
+        #endif
 
         guard let runLoop = CFRunLoopGetCurrent() else {
             throw SPUSensorError.configurationFailed(kIOReturnError)
@@ -227,7 +239,7 @@ final class SPUHIDMotionSensor {
 
             let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: Self.reportBufferSize)
             buffer.initialize(repeating: 0, count: Self.reportBufferSize)
-            let context = CallbackContext(owner: self, kind: kind)
+            let context = CallbackContext(owner: self, kind: kind, generation: generation)
             let contextPointer = Unmanaged.passUnretained(context).toOpaque()
 
             IOHIDDeviceRegisterInputReportWithTimeStampCallback(
@@ -283,6 +295,7 @@ final class SPUHIDMotionSensor {
         }
     }
 
+    #if !APP_STORE
     private func wakeSensorDrivers() throws {
         let services = Self.enumerateServices(className: "AppleSPUHIDDriver")
         defer { Self.releaseServices(services) }
@@ -303,11 +316,18 @@ final class SPUHIDMotionSensor {
             }
         }
     }
+    #endif
 
-    private func handleReport(kind: SensorKind, report: UnsafeMutablePointer<UInt8>?, length: CFIndex) {
-        guard let report else { return }
-        // Logging state is guarded because start() can reset it from another
-        // thread if a previous sensor thread outlived its 2-second exit wait.
+    private func handleReport(
+        kind: SensorKind,
+        generation: Int,
+        report: UnsafeMutablePointer<UInt8>?,
+        length: CFIndex
+    ) {
+        guard
+            let report,
+            stateLock.withLock({ runGeneration == generation && !shouldStop })
+        else { return }
         guard length == Self.reportLength else {
             let isNewLength = stateLock.withLock {
                 unexpectedReportLengths.insert(length).inserted
@@ -352,6 +372,7 @@ final class SPUHIDMotionSensor {
         let callbackContext = Unmanaged<CallbackContext>.fromOpaque(context).takeUnretainedValue()
         callbackContext.owner.handleReport(
             kind: callbackContext.kind,
+            generation: callbackContext.generation,
             report: report,
             length: reportLength
         )

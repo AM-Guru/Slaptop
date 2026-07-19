@@ -98,6 +98,38 @@ final class TapClassifierTests: XCTestCase {
         XCTAssertFalse(MissionControlController.isInstalledApplication(at: URL(fileURLWithPath: "/Applications/Slaptop Beta.app")))
     }
 
+    func testApplicationInstallerCopiesValidatedBundleWithoutReplacingIt() throws {
+        let temporaryDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("SlaptopInstallerTests-\(UUID().uuidString)", isDirectory: true)
+        let destinationURL = temporaryDirectory
+            .appendingPathComponent("Slaptop.app", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+        try FileManager.default.createDirectory(
+            at: temporaryDirectory,
+            withIntermediateDirectories: true
+        )
+
+        XCTAssertEqual(
+            try AppInstallationManager.installCurrentApplication(
+                from: Bundle.main.bundleURL,
+                to: destinationURL
+            ),
+            .installed
+        )
+        XCTAssertEqual(Bundle(url: destinationURL)?.bundleIdentifier, "guru.am.slaptop")
+
+        // A second request must reuse the validated installed copy rather than
+        // deleting or replacing it.
+        XCTAssertEqual(
+            try AppInstallationManager.installCurrentApplication(
+                from: Bundle.main.bundleURL,
+                to: destinationURL
+            ),
+            .existingInstallation
+        )
+    }
+
     func testSustainedMotionEmitsOneDetectionUntilQuietReturns() throws {
         let detector = MotionFeatureDetector()
         detector.setSensitivity(0.29)
@@ -413,6 +445,55 @@ final class TapClassifierTests: XCTestCase {
         XCTAssertNil(AppUpdater.buildNumber(fromTag: "v1.0"))
         XCTAssertNil(AppUpdater.buildNumber(fromTag: "v1.0-build."))
         XCTAssertNil(AppUpdater.buildNumber(fromTag: "v1.0-build.12beta"))
+    }
+
+    func testUpdateInstallerRequiresAnExactNumericBundleBuild() throws {
+        let applicationURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("Slaptop-updater-test-\(UUID().uuidString).app")
+        let contentsURL = applicationURL.appendingPathComponent("Contents", isDirectory: true)
+        try FileManager.default.createDirectory(at: contentsURL, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: applicationURL) }
+
+        let infoPlistURL = contentsURL.appendingPathComponent("Info.plist")
+        let validPlist = try PropertyListSerialization.data(
+            fromPropertyList: ["CFBundleVersion": "27"],
+            format: .binary,
+            options: 0
+        )
+        try validPlist.write(to: infoPlistURL)
+        XCTAssertEqual(try AppUpdateInstaller.buildNumber(of: applicationURL), 27)
+
+        let invalidPlist = try PropertyListSerialization.data(
+            fromPropertyList: ["CFBundleVersion": "27beta"],
+            format: .binary,
+            options: 0
+        )
+        try invalidPlist.write(to: infoPlistURL, options: .atomic)
+        XCTAssertThrowsError(try AppUpdateInstaller.buildNumber(of: applicationURL))
+    }
+
+    func testUpdateInstallerRequiresGatekeeperToReportNotarization() throws {
+        func assessment(verdict: Bool, source: String) throws -> Data {
+            try PropertyListSerialization.data(
+                fromPropertyList: [
+                    "assessment:verdict": verdict,
+                    "assessment:authority": ["assessment:authority:source": source],
+                ],
+                format: .xml,
+                options: 0
+            )
+        }
+
+        XCTAssertTrue(AppUpdateInstaller.isNotarizedGatekeeperAssessment(
+            try assessment(verdict: true, source: "Notarized Developer ID")
+        ))
+        XCTAssertFalse(AppUpdateInstaller.isNotarizedGatekeeperAssessment(
+            try assessment(verdict: true, source: "Developer ID")
+        ))
+        XCTAssertFalse(AppUpdateInstaller.isNotarizedGatekeeperAssessment(
+            try assessment(verdict: false, source: "Notarized Developer ID")
+        ))
+        XCTAssertFalse(AppUpdateInstaller.isNotarizedGatekeeperAssessment(Data("not a plist".utf8)))
     }
 
     func testAutomaticUpdateChecksFollowTheChosenFrequency() {
