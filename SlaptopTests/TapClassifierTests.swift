@@ -615,4 +615,146 @@ final class TapClassifierTests: XCTestCase {
         ActivationPreference.setEnabled(false, defaults: defaults)
         XCTAssertFalse(FirstLaunchPreference.shouldPresent(defaults: defaults))
     }
+
+    func testCustomGestureMatcherLearnsMotionShapeAndRhythm() throws {
+        let pattern = makeCustomGesturePattern(name: "Knock Code")
+        let observed = sample(
+            first: [0.51, 0.09, 0.2, 2.1, 0.9, 8.2],
+            second: [-0.21, 0.58, 0.11, -1.1, 5.1, 0.6],
+            interval: 0.43
+        ).events
+
+        XCTAssertEqual(
+            CustomGestureMatcher.bestFullMatch(for: observed, among: [pattern])?.id,
+            pattern.id
+        )
+        XCTAssertEqual(
+            CustomGestureMatcher.matchingPrefixes(
+                for: Array(observed.prefix(1)),
+                among: [pattern]
+            ).map(\.id),
+            [pattern.id]
+        )
+
+        var wrongMotion = observed
+        wrongMotion[0] = CustomGestureEvent(
+            features: [-1.0, 0.09, 0.2, 2.1, 0.9, 8.2],
+            intervalSincePrevious: 0
+        )
+        XCTAssertNil(CustomGestureMatcher.bestFullMatch(for: wrongMotion, among: [pattern]))
+
+        var wrongRhythm = observed
+        wrongRhythm[1] = CustomGestureEvent(
+            features: wrongRhythm[1].features,
+            intervalSincePrevious: 0.9
+        )
+        XCTAssertNil(CustomGestureMatcher.bestFullMatch(for: wrongRhythm, among: [pattern]))
+    }
+
+    func testCustomGestureTrainingRequiresConsistentImpactCountsAndPerformances() {
+        let first = sample(
+            first: [0.5, 0.1, 0.2, 2, 1, 8],
+            second: [-0.2, 0.6, 0.1, -1, 5, 0.5],
+            interval: 0.42
+        )
+        let similar = sample(
+            first: [0.52, 0.08, 0.21, 2.2, 0.8, 8.4],
+            second: [-0.18, 0.62, 0.09, -0.8, 5.3, 0.4],
+            interval: 0.46
+        )
+        let different = sample(
+            first: [-1.0, 0.08, 0.21, 2.2, 0.8, 8.4],
+            second: [-0.18, 0.62, 0.09, -0.8, 5.3, 0.4],
+            interval: 0.46
+        )
+        let oneImpact = CustomGestureSample(events: [similar.events[0]])
+
+        XCTAssertTrue(CustomGestureMatcher.samplesAreConsistent(similar, with: [first]))
+        XCTAssertFalse(CustomGestureMatcher.samplesAreConsistent(different, with: [first]))
+        XCTAssertFalse(CustomGestureMatcher.samplesAreConsistent(oneImpact, with: [first]))
+    }
+
+    func testAnyNumberOfCustomGesturePatternsPersistWithTheirActions() throws {
+        let patterns = (0..<24).map { index -> CustomGesturePattern in
+            let action: CustomGestureAction = index.isMultiple(of: 2)
+                ? .keyboardShortcut(TapKeyBinding(keyCode: UInt16(index), modifiers: .command))
+                : .typeText("Text \(index)")
+            return makeCustomGesturePattern(name: "Pattern \(index)", action: action)
+        }
+        CustomGestureStore.save(patterns, to: defaults)
+
+        XCTAssertEqual(CustomGestureStore.load(from: defaults), patterns)
+        XCTAssertEqual(CustomGestureStore.load(from: defaults).count, 24)
+
+        let invalid = CustomGesturePattern(
+            id: UUID(),
+            name: "Only trained twice",
+            action: .typeText("No"),
+            samples: Array(patterns[0].samples.prefix(2))
+        )
+        defaults.set(
+            try JSONEncoder().encode([patterns[0], invalid]),
+            forKey: CustomGestureStore.defaultsKey
+        )
+        XCTAssertEqual(CustomGestureStore.load(from: defaults), [patterns[0]])
+    }
+
+    @MainActor
+    func testCustomGestureMetadataCanBeEditedAndDeleted() {
+        let pattern = makeCustomGesturePattern(name: "Original")
+        CustomGestureStore.save([pattern], to: defaults)
+        let model = AppModel(defaults: defaults, automaticallyEnable: false)
+        let newAction = CustomGestureAction.typeText("Hello from Slaptop")
+
+        model.updateCustomGesture(id: pattern.id, name: "Greeting", action: newAction)
+
+        XCTAssertEqual(model.customGesturePatterns[0].name, "Greeting")
+        XCTAssertEqual(model.customGesturePatterns[0].action, newAction)
+        XCTAssertEqual(CustomGestureStore.load(from: defaults), model.customGesturePatterns)
+
+        model.deleteCustomGesture(id: pattern.id)
+        XCTAssertTrue(model.customGesturePatterns.isEmpty)
+        XCTAssertTrue(CustomGestureStore.load(from: defaults).isEmpty)
+    }
+
+    private func makeCustomGesturePattern(
+        name: String,
+        action: CustomGestureAction = .keyboardShortcut(
+            TapKeyBinding(keyCode: 40, modifiers: [.command, .shift])
+        )
+    ) -> CustomGesturePattern {
+        CustomGesturePattern(
+            id: UUID(),
+            name: name,
+            action: action,
+            samples: [
+                sample(
+                    first: [0.5, 0.1, 0.2, 2, 1, 8],
+                    second: [-0.2, 0.6, 0.1, -1, 5, 0.5],
+                    interval: 0.42
+                ),
+                sample(
+                    first: [0.52, 0.08, 0.21, 2.2, 0.8, 8.4],
+                    second: [-0.18, 0.62, 0.09, -0.8, 5.3, 0.4],
+                    interval: 0.46
+                ),
+                sample(
+                    first: [0.48, 0.12, 0.19, 1.8, 1.1, 7.7],
+                    second: [-0.22, 0.57, 0.12, -1.2, 4.8, 0.6],
+                    interval: 0.39
+                ),
+            ]
+        )
+    }
+
+    private func sample(
+        first: [Double],
+        second: [Double],
+        interval: TimeInterval
+    ) -> CustomGestureSample {
+        CustomGestureSample(events: [
+            CustomGestureEvent(features: first, intervalSincePrevious: 0),
+            CustomGestureEvent(features: second, intervalSincePrevious: interval),
+        ])
+    }
 }

@@ -1,6 +1,6 @@
 # Slaptop for macOS
 
-Slaptop is a modern Apple-silicon remake of Kalani Helekunihi's 2005 utility. A left-side tap moves one Space left, a right-side tap moves one Space right, and a top-edge tap launches Mission Control. A "Tap direction" setting offers Natural (default — move toward the tapped side) and Inverted (the classic push-the-content mapping). The default Mission Control shortcuts are ⌃←, ⌃→, and ⌃↑. Users who changed those system-wide shortcuts can enter their matching bindings under Settings → Space Mapping.
+Slaptop is a modern Apple-silicon remake of Kalani Helekunihi's 2005 utility. A left-side tap moves one Space left, a right-side tap moves one Space right, and a top-edge tap launches Mission Control. A "Tap direction" setting offers Natural (default — move toward the tapped side) and Inverted (the classic push-the-content mapping). The default Mission Control shortcuts are ⌃←, ⌃→, and ⌃↑. Users who changed those system-wide shortcuts can enter their matching bindings under Settings → Space Mapping. Custom gesture patterns can also learn tap or knock codes elsewhere on the computer and use them to press a keyboard shortcut or type text.
 
 ## Website
 
@@ -47,6 +47,12 @@ Learning uses the thresholds currently selected by the sensitivity slider and ac
 Tap detection is edge-triggered — an impulse must rise out of quiet motion, so sustained movement fires at most one action — with a configurable 333–1,000 ms interval to prevent one physical tap from switching multiple Spaces while allowing up to three intentional taps per second. The sensitivity slider adjusts the required motion impulse from 0.05 g (gentle) to 0.50 g (firm), with a 0.29 g default.
 
 Choose **Show Sensor Data** in Settings to see rolling accelerometer, gyroscope, and dynamic-impact graphs. The impact graph draws the active detection threshold and reports each accepted tap, making it possible to distinguish missing sensor reports from a threshold that is too firm for a particular MacBook.
+
+## Custom gesture patterns
+
+The bottom of Settings contains **Custom gesture patterns**. Add a named pattern, choose a keyboard shortcut or text action, and perform the complete tap or knock pattern three times. A quiet pause ends each sample. All three samples must contain the same number of impacts; Slaptop learns both their motion signatures and the rhythm between them, and asks for a repetition again when it is inconsistent.
+
+Patterns and actions are stored locally in UserDefaults and can be edited, relearned, tested, or deleted. There is no fixed pattern-count limit. When patterns are configured, sensor impacts are collected at the fastest supported interval so their rhythm remains observable, while the user's ordinary Space-action debounce remains unchanged.
 
 ## Architecture
 

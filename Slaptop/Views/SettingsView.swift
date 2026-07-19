@@ -6,6 +6,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var model: AppModel
+    @State private var customGestureEditor: CustomGestureEditorContext?
+    @State private var customGesturePendingDeletion: CustomGesturePattern?
     #if !APP_STORE
     @ObservedObject var updater: AppUpdater
     #endif
@@ -33,6 +35,7 @@ struct SettingsView: View {
                     updatesSection
                     advancedSection
                     #endif
+                    customGesturePatternsSection
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
@@ -43,6 +46,35 @@ struct SettingsView: View {
         }
         .frame(width: 680, height: 720)
         .onAppear(perform: model.refreshSystemState)
+        .sheet(item: $customGestureEditor, onDismiss: {
+            model.cancelCustomGestureTraining()
+        }) { context in
+            CustomGestureEditor(
+                model: model,
+                context: context
+            )
+        }
+        .confirmationDialog(
+            customGesturePendingDeletion.map { "Delete “\($0.name)”?" }
+                ?? "Delete custom pattern?",
+            isPresented: Binding(
+                get: { customGesturePendingDeletion != nil },
+                set: { if !$0 { customGesturePendingDeletion = nil } }
+            ),
+            titleVisibility: .visible
+        ) {
+            if let pattern = customGesturePendingDeletion {
+                Button("Delete Pattern", role: .destructive) {
+                    model.deleteCustomGesture(id: pattern.id)
+                    customGesturePendingDeletion = nil
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                customGesturePendingDeletion = nil
+            }
+        } message: {
+            Text("Its three learned samples and assigned action will be removed.")
+        }
         .task {
             // Live-refresh permission state so granting Accessibility in
             // System Settings flips the row without reopening the window.
@@ -299,6 +331,72 @@ struct SettingsView: View {
         }
     }
 
+    private var customGesturePatternsSection: some View {
+        SettingsSection(title: "Custom gesture patterns", symbol: "waveform.badge.plus") {
+            Text("Teach Slaptop a tap or knock code anywhere on the computer. Motion shape and the timing between impacts are learned from three performances.")
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+
+            if model.customGesturePatterns.isEmpty {
+                HStack(spacing: 10) {
+                    Image(systemName: "hand.tap")
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("No custom patterns yet")
+                        Text("Add one to perform a keyboard shortcut or type text.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            } else {
+                ForEach(model.customGesturePatterns) { pattern in
+                    CustomGesturePatternRow(
+                        pattern: pattern,
+                        test: {
+                            model.testCustomGestureAction(
+                                pattern.action,
+                                name: pattern.name
+                            )
+                        },
+                        edit: {
+                            customGestureEditor = CustomGestureEditorContext(
+                                pattern: pattern
+                            )
+                        },
+                        delete: {
+                            customGesturePendingDeletion = pattern
+                        }
+                    )
+                    if pattern.id != model.customGesturePatterns.last?.id {
+                        Divider()
+                    }
+                }
+            }
+
+            HStack {
+                Button {
+                    customGestureEditor = CustomGestureEditorContext(pattern: nil)
+                } label: {
+                    Label("Add Pattern", systemImage: "plus")
+                }
+                .disabled(!model.isSensorRunning)
+                Spacer()
+                if !model.isSensorRunning {
+                    Text("Start the motion sensor to learn patterns")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Text("While custom patterns are configured, Slaptop samples impacts at its fastest rate so it can recognize their rhythm. Your minimum interval still applies to ordinary Space actions.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     #if !APP_STORE
     private var updatesSection: some View {
         SettingsSection(title: "Software updates", symbol: "arrow.down.circle") {
@@ -513,6 +611,260 @@ private struct MappingRow: View {
             .fixedSize()
             Button("Test", action: testAction)
                 .controlSize(.small)
+        }
+    }
+}
+
+private struct CustomGesturePatternRow: View {
+    let pattern: CustomGesturePattern
+    let test: () -> Void
+    let edit: () -> Void
+    let delete: () -> Void
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: pattern.action.symbol)
+                .font(.title3)
+                .foregroundStyle(.tint)
+                .frame(width: 26)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(pattern.name)
+                    .fontWeight(.medium)
+                Text(pattern.action.summary)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Text("\(pattern.eventCount)-impact pattern · 3 learned samples")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+            }
+            .layoutPriority(1)
+            Spacer()
+            Button("Test", action: test)
+                .controlSize(.small)
+            Button("Edit", action: edit)
+                .controlSize(.small)
+            Button(action: delete) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .foregroundStyle(.red)
+            .help("Delete \(pattern.name)")
+        }
+    }
+}
+
+private struct CustomGestureEditorContext: Identifiable {
+    let id: UUID
+    let pattern: CustomGesturePattern?
+
+    init(pattern: CustomGesturePattern?) {
+        id = pattern?.id ?? UUID()
+        self.pattern = pattern
+    }
+}
+
+private enum CustomGestureActionKind: String, CaseIterable {
+    case keyboardShortcut
+    case typeText
+
+    var label: String {
+        switch self {
+        case .keyboardShortcut: return "Keyboard Shortcut"
+        case .typeText: return "Type Text"
+        }
+    }
+}
+
+private struct CustomGestureEditor: View {
+    @ObservedObject var model: AppModel
+    let context: CustomGestureEditorContext
+    @Environment(\.dismiss) private var dismiss
+    @State private var name: String
+    @State private var actionKind: CustomGestureActionKind
+    @State private var shortcut: TapKeyBinding
+    @State private var text: String
+
+    init(model: AppModel, context: CustomGestureEditorContext) {
+        self.model = model
+        self.context = context
+        let pattern = context.pattern
+        _name = State(initialValue: pattern?.name ?? "")
+        switch pattern?.action {
+        case let .keyboardShortcut(binding):
+            _actionKind = State(initialValue: .keyboardShortcut)
+            _shortcut = State(initialValue: binding)
+            _text = State(initialValue: "")
+        case let .typeText(value):
+            _actionKind = State(initialValue: .typeText)
+            _shortcut = State(initialValue: SpaceKeyBindings.standard.launchMissionControl)
+            _text = State(initialValue: value)
+        case nil:
+            _actionKind = State(initialValue: .keyboardShortcut)
+            _shortcut = State(initialValue: SpaceKeyBindings.standard.launchMissionControl)
+            _text = State(initialValue: "")
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(context.pattern == nil ? "Add Custom Pattern" : "Edit Custom Pattern")
+                    .font(.title2.weight(.semibold))
+                Text("A quiet pause marks the end of each performance.")
+                    .foregroundStyle(.secondary)
+            }
+
+            VStack(alignment: .leading, spacing: 12) {
+                TextField("Pattern name", text: $name)
+                    .textFieldStyle(.roundedBorder)
+
+                Picker("Action", selection: $actionKind) {
+                    ForEach(CustomGestureActionKind.allCases, id: \.self) { kind in
+                        Text(kind.label).tag(kind)
+                    }
+                }
+                .pickerStyle(.segmented)
+
+                switch actionKind {
+                case .keyboardShortcut:
+                    HStack {
+                        Text("Shortcut")
+                        Spacer()
+                        ShortcutRecorderButton(
+                            binding: $shortcut,
+                            actionLabel: name.isEmpty ? "custom pattern" : name
+                        )
+                        .fixedSize()
+                    }
+                case .typeText:
+                    TextField("Text to type", text: $text)
+                        .textFieldStyle(.roundedBorder)
+                }
+            }
+            .disabled(configurationIsLocked)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Label(
+                    model.customGestureTrainingState.prompt,
+                    systemImage: trainingSymbol
+                )
+                .foregroundStyle(trainingColor)
+                .fixedSize(horizontal: false, vertical: true)
+
+                if case let .recording(_, eventCount) = model.customGestureTrainingState {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(eventCount == 0 ? "Listening…" : "Listening for more impacts…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if case .ready = model.customGestureTrainingState {
+                    Button("Record Next Sample") {
+                        model.recordNextCustomGestureSample()
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+
+                if !model.isSensorRunning,
+                   !model.customGestureTrainingState.isActive,
+                   !trainingIsComplete {
+                    Text("Start Slaptop or independent sensor logging before learning this pattern. You can still save changes to an existing action.")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            .padding(14)
+            .background(.quaternary.opacity(0.55), in: RoundedRectangle(cornerRadius: 10))
+
+            HStack {
+                if model.customGestureTrainingState.isActive {
+                    Button("Cancel Learning", role: .cancel) {
+                        model.cancelCustomGestureTraining()
+                    }
+                } else {
+                    Button("Cancel", role: .cancel) {
+                        dismiss()
+                    }
+                }
+                Spacer()
+
+                if trainingIsComplete {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .keyboardShortcut(.defaultAction)
+                } else if !model.customGestureTrainingState.isActive {
+                    if context.pattern != nil {
+                        Button("Save Changes") {
+                            model.updateCustomGesture(
+                                id: context.id,
+                                name: name,
+                                action: selectedAction
+                            )
+                            dismiss()
+                        }
+                        .disabled(!configurationIsValid)
+                    }
+                    Button(context.pattern == nil ? "Start Learning" : "Learn Again") {
+                        model.beginCustomGestureTraining(
+                            id: context.id,
+                            name: name,
+                            action: selectedAction
+                        )
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(!configurationIsValid || !model.isSensorRunning)
+                }
+            }
+        }
+        .padding(24)
+        .frame(width: 520)
+        .interactiveDismissDisabled(model.customGestureTrainingState.isActive)
+    }
+
+    private var selectedAction: CustomGestureAction {
+        switch actionKind {
+        case .keyboardShortcut: return .keyboardShortcut(shortcut)
+        case .typeText: return .typeText(text)
+        }
+    }
+
+    private var configurationIsValid: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && selectedAction.isValid
+    }
+
+    private var trainingIsComplete: Bool {
+        if case .learned = model.customGestureTrainingState { return true }
+        return false
+    }
+
+    private var configurationIsLocked: Bool {
+        model.customGestureTrainingState.isActive || trainingIsComplete
+    }
+
+    private var trainingSymbol: String {
+        switch model.customGestureTrainingState {
+        case .idle: return "waveform"
+        case .recording: return "record.circle"
+        case .ready: return "checkmark.circle"
+        case .learned: return "checkmark.seal.fill"
+        }
+    }
+
+    private var trainingColor: Color {
+        switch model.customGestureTrainingState {
+        case .idle: return .secondary
+        case .recording: return .accentColor
+        case let .ready(_, _, _, message): return message == nil ? .green : .orange
+        case .learned: return .green
         }
     }
 }

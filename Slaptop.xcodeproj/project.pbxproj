@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		C57A91D4B2E84F129A001001 /* CustomGesturePattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57A91D4B2E84F129A001000 /* CustomGesturePattern.swift */; };
+		C57A91D4B2E84F129A001002 /* CustomGesturePattern.swift in Sources */ = {isa = PBXBuildFile; fileRef = C57A91D4B2E84F129A001000 /* CustomGesturePattern.swift */; };
 		03F1C7ECEDA4E940B9E0A968 /* TapKeyBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DF5E6852E600D7A9EA3709 /* TapKeyBinding.swift */; };
 		075D420ED1BAA4942EEFDE91 /* SensorDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 026A90F7C48D0494431CBA42 /* SensorDataView.swift */; };
 		092679867606E8E3343B4899 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65ACB4D2F7937CF7DC18B27 /* SettingsView.swift */; };
@@ -113,6 +115,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C57A91D4B2E84F129A001000 /* CustomGesturePattern.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomGesturePattern.swift; sourceTree = "<group>"; };
 		026A90F7C48D0494431CBA42 /* SensorDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorDataView.swift; sourceTree = "<group>"; };
 		02A4180D33E3293CE3E10E6F /* SensorXPCProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorXPCProtocol.swift; sourceTree = "<group>"; };
 		090BB54D9EFE531CA6A92425 /* SPUHIDMotionSensor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SPUHIDMotionSensor.swift; sourceTree = "<group>"; };
@@ -313,6 +316,7 @@
 			children = (
 				3C5A9E57B2241CA2B70B3931 /* ActivationPreference.swift */,
 				49920BCC75DB75C7AFAE4206 /* AppVersion.swift */,
+				C57A91D4B2E84F129A001000 /* CustomGesturePattern.swift */,
 				387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */,
 				B8C28A1D72F9ECACA259FCA0 /* LiveSensorSample.swift */,
 				4EF7B9DA21D1A0BEBA98CFC9 /* SensorChartScale.swift */,
@@ -525,6 +529,7 @@
 			files = (
 				E990E0C856EE7C318D0ADE47 /* AboutView.swift in Sources */,
 				22C6C7FFA997E0DB5BB1E067 /* ActivationPreference.swift in Sources */,
+				C57A91D4B2E84F129A001001 /* CustomGesturePattern.swift in Sources */,
 				36BD83C64D49C0E9E622280A /* AppDelegate.swift in Sources */,
 				BFF18DCCE2D8922A2E21F03D /* AppModel.swift in Sources */,
 				9DCBE5EDA6D9ECB51AEFE9EB /* AppUpdater.swift in Sources */,
@@ -567,6 +572,7 @@
 			files = (
 				FA3B4EE8BAF70FC010512D78 /* AboutView.swift in Sources */,
 				B659B223984C27213C139FB8 /* ActivationPreference.swift in Sources */,
+				C57A91D4B2E84F129A001002 /* CustomGesturePattern.swift in Sources */,
 				340BF7F7473B1944B450CC73 /* AppDelegate.swift in Sources */,
 				4916D3BEF4D78A05F16AA4E1 /* AppModel.swift in Sources */,
 				286248B775B522CC3A8E2D0E /* AppVersion.swift in Sources */,

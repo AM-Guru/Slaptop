@@ -28,6 +28,47 @@ final class AppModel: ObservableObject {
         }
     }
 
+    enum CustomGestureTrainingState: Equatable {
+        case idle
+        case recording(repetition: Int, eventCount: Int)
+        case ready(
+            repetition: Int,
+            completed: Int,
+            expectedEventCount: Int,
+            message: String?
+        )
+        case learned(name: String)
+
+        var isActive: Bool {
+            switch self {
+            case .recording, .ready: return true
+            case .idle, .learned: return false
+            }
+        }
+
+        var isRecording: Bool {
+            if case .recording = self { return true }
+            return false
+        }
+
+        var prompt: String {
+            switch self {
+            case .idle:
+                return "Create an action, then perform the same tap or knock pattern three times."
+            case let .recording(repetition, eventCount):
+                if eventCount == 0 {
+                    return "Sample \(repetition) of 3: perform the pattern now."
+                }
+                return "Sample \(repetition) of 3: recorded \(eventCount) impact\(eventCount == 1 ? "" : "s"). Pause briefly when finished."
+            case let .ready(repetition, completed, expectedEventCount, message):
+                if let message { return message }
+                return "Sample \(completed) saved with \(expectedEventCount) impact\(expectedEventCount == 1 ? "" : "s"). Record sample \(repetition) the same way."
+            case let .learned(name):
+                return "“\(name)” is learned and ready to use."
+            }
+        }
+    }
+
     private enum MonitoringRequest {
         case spaceSwitching
         case sensorLogging
@@ -51,6 +92,8 @@ final class AppModel: ObservableObject {
     @Published private(set) var calibrationState: CalibrationState = .idle
     @Published private(set) var isCalibrated = false
     @Published private(set) var calibratedSides: Set<TapSide> = []
+    @Published private(set) var customGesturePatterns: [CustomGesturePattern]
+    @Published private(set) var customGestureTrainingState: CustomGestureTrainingState = .idle
     @Published var sensitivity: Double {
         didSet {
             defaults.set(sensitivity, forKey: Self.sensitivityKey)
@@ -61,7 +104,7 @@ final class AppModel: ObservableObject {
         didSet {
             let value = TapTiming.clamp(minimumTapInterval)
             defaults.set(value, forKey: Self.minimumTapIntervalKey)
-            sensorService.updateMinimumTapInterval(value)
+            sensorService.updateMinimumTapInterval(activeSensorMinimumTapInterval)
         }
     }
     @Published var tapDirection: TapDirectionPreference {
@@ -93,6 +136,8 @@ final class AppModel: ObservableObject {
     private static let maximumSensorSamples = 300
     private static let sensorChartUpdateInterval: TimeInterval = 1.0 / 8.0
     private static let calibrationArmingDelay = 0.35
+    private static let customGestureArmingDelay = 0.35
+    private static let customGestureRecordingSilence: TimeInterval = 1.35
     #if !APP_STORE
     let updater = AppUpdater()
     #endif
@@ -102,6 +147,26 @@ final class AppModel: ObservableObject {
     private let missionControlController = MissionControlController()
     private var calibrationSamples: [ImpactFeatures] = []
     private var calibrationArmedAt: TimeInterval = 0
+    private struct CustomGestureDraft {
+        let id: UUID
+        let name: String
+        let action: CustomGestureAction
+    }
+    private struct PendingCustomGestureImpact {
+        let features: ImpactFeatures
+        let timestamp: TimeInterval
+    }
+    private var customGestureDraft: CustomGestureDraft?
+    private var customGestureTrainingSamples: [CustomGestureSample] = []
+    private var customGestureCurrentEvents: [CustomGestureEvent] = []
+    private var customGestureLastEventAt: TimeInterval?
+    private var customGestureArmedAt: TimeInterval = 0
+    private var customGestureRecordingWorkItem: DispatchWorkItem?
+    private var pendingCustomGestureImpacts: [PendingCustomGestureImpact] = []
+    private var pendingCompletedCustomGesture: CustomGesturePattern?
+    private var pendingCustomGestureWorkItem: DispatchWorkItem?
+    private var pendingCustomGestureSequenceID: UUID?
+    private var lastStandardImpactAt: TimeInterval = -.infinity
     private var nextSensorSampleID: UInt64 = 0
     private var isRefreshingSensorService = false
     /// One automatic registration repair per start attempt; cleared on success.
@@ -113,6 +178,12 @@ final class AppModel: ObservableObject {
 
     private var activeSensorSensitivity: Double {
         sensitivity
+    }
+
+    private var activeSensorMinimumTapInterval: Double {
+        customGesturePatterns.isEmpty && !customGestureTrainingState.isActive
+            ? minimumTapInterval
+            : TapTiming.minimumInterval
     }
 
     init(defaults: UserDefaults = .standard, automaticallyEnable: Bool = true) {
@@ -130,6 +201,7 @@ final class AppModel: ObservableObject {
             rawValue: defaults.string(forKey: TapDirectionPreference.key) ?? ""
         ) ?? .natural
         keyBindings = SpaceKeyBindings.load(from: defaults)
+        customGesturePatterns = CustomGestureStore.load(from: defaults)
         isCalibrated = classifier.isCalibrated
         calibratedSides = classifier.calibratedSides
 
@@ -166,6 +238,8 @@ final class AppModel: ObservableObject {
                     self.calibrationState = .idle
                     self.calibrationSamples.removeAll()
                     self.calibrationArmedAt = 0
+                    self.cancelCustomGestureTraining()
+                    self.clearPendingCustomGestureRecognition()
                 }
             }
         }
@@ -219,6 +293,8 @@ final class AppModel: ObservableObject {
         calibrationState = .idle
         calibrationSamples.removeAll()
         calibrationArmedAt = 0
+        cancelCustomGestureTraining()
+        clearPendingCustomGestureRecognition()
         if SensorMonitoringPolicy.shouldMonitor(
             isSlaptopEnabled: isEnabled,
             isSensorLoggingEnabled: isSensorLoggingEnabled
@@ -243,6 +319,8 @@ final class AppModel: ObservableObject {
                 calibrationState = .idle
                 calibrationSamples.removeAll()
                 calibrationArmedAt = 0
+                cancelCustomGestureTraining()
+                clearPendingCustomGestureRecognition()
                 stopSensorMonitoring(message: "Sensor logging paused.")
             }
             return
@@ -395,6 +473,8 @@ final class AppModel: ObservableObject {
             statusMessage = "Enable Slaptop or independent sensor logging before calibrating."
             return
         }
+        cancelCustomGestureTraining()
+        clearPendingCustomGestureRecognition()
         calibrationSamples.removeAll()
         calibrationState = .collecting(side: side, count: 0)
         calibrationArmedAt = ProcessInfo.processInfo.systemUptime + Self.calibrationArmingDelay
@@ -466,6 +546,94 @@ final class AppModel: ObservableObject {
         statusMessage = "Restored the default Mission Control and Spaces shortcuts."
     }
 
+    @discardableResult
+    func beginCustomGestureTraining(
+        id: UUID = UUID(),
+        name: String,
+        action: CustomGestureAction
+    ) -> Bool {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, action.isValid else {
+            statusMessage = "Give the pattern a name and a valid action before learning it."
+            return false
+        }
+        guard isSensorRunning else {
+            statusMessage = "Enable Slaptop or independent sensor logging before learning a pattern."
+            return false
+        }
+
+        cancelCustomGestureTraining()
+        clearPendingCustomGestureRecognition()
+        calibrationState = .idle
+        calibrationSamples.removeAll()
+        calibrationArmedAt = 0
+        customGestureDraft = CustomGestureDraft(
+            id: id,
+            name: trimmedName,
+            action: action
+        )
+        customGestureTrainingSamples.removeAll(keepingCapacity: true)
+        startCustomGestureRepetition(1)
+        sensorService.updateMinimumTapInterval(activeSensorMinimumTapInterval)
+        statusMessage = customGestureTrainingState.prompt
+        return true
+    }
+
+    func recordNextCustomGestureSample() {
+        guard case let .ready(repetition, _, _, _) = customGestureTrainingState,
+              customGestureDraft != nil
+        else { return }
+        startCustomGestureRepetition(repetition)
+        statusMessage = customGestureTrainingState.prompt
+    }
+
+    func cancelCustomGestureTraining() {
+        customGestureRecordingWorkItem?.cancel()
+        customGestureRecordingWorkItem = nil
+        customGestureDraft = nil
+        customGestureTrainingSamples.removeAll(keepingCapacity: true)
+        customGestureCurrentEvents.removeAll(keepingCapacity: true)
+        customGestureLastEventAt = nil
+        customGestureArmedAt = 0
+        customGestureTrainingState = .idle
+        sensorService.updateMinimumTapInterval(activeSensorMinimumTapInterval)
+    }
+
+    func updateCustomGesture(
+        id: UUID,
+        name: String,
+        action: CustomGestureAction
+    ) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty, action.isValid,
+              let index = customGesturePatterns.firstIndex(where: { $0.id == id })
+        else { return }
+        customGesturePatterns[index].name = trimmedName
+        customGesturePatterns[index].action = action
+        CustomGestureStore.save(customGesturePatterns, to: defaults)
+        statusMessage = "Updated \(trimmedName)."
+    }
+
+    func deleteCustomGesture(id: UUID) {
+        guard let index = customGesturePatterns.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+        let name = customGesturePatterns[index].name
+        customGesturePatterns.remove(at: index)
+        CustomGestureStore.save(customGesturePatterns, to: defaults)
+        clearPendingCustomGestureRecognition()
+        sensorService.updateMinimumTapInterval(activeSensorMinimumTapInterval)
+        statusMessage = "Deleted \(name)."
+    }
+
+    func testCustomGestureAction(_ action: CustomGestureAction, name: String) {
+        let successMessage = "\(name) → \(action.summary)"
+        statusMessage = "Testing \(successMessage)…"
+        missionControlController.perform(action) { [weak self] result in
+            self?.finishSpaceAction(result, successMessage: successMessage)
+        }
+    }
+
     private func activateSensorService(for request: MonitoringRequest) {
         if isSensorRunning {
             markMonitoringRequestActive(request)
@@ -515,7 +683,7 @@ final class AppModel: ObservableObject {
         statusMessage = "Connecting to the motion sensor…"
         sensorService.start(
             sensitivity: activeSensorSensitivity,
-            minimumTapInterval: minimumTapInterval
+            minimumTapInterval: activeSensorMinimumTapInterval
         ) { [weak self] result in
             DispatchQueue.main.async {
                 self?.finishSensorStart(result, request: request)
@@ -538,7 +706,7 @@ final class AppModel: ObservableObject {
             isSensorRunning = false
             cancelMonitoringRequest(request)
             statusMessage = message
-        case .unreachable(let message):
+        case .unreachable:
             isSensorRunning = false
             guard !hasAttemptedServiceRepair else {
                 // Reinstalling the registration did not help: on some macOS
@@ -676,6 +844,16 @@ final class AppModel: ObservableObject {
         lastDetectedTapDate = Date()
         lastTapTriggeredAction = false
 
+        if customGestureTrainingState.isActive {
+            if customGestureTrainingState.isRecording {
+                recordCustomGestureTrainingImpact(
+                    features,
+                    timestamp: ProcessInfo.processInfo.systemUptime
+                )
+            }
+            return
+        }
+
         if case let .collecting(side, count) = calibrationState {
             guard ProcessInfo.processInfo.systemUptime >= calibrationArmedAt else {
                 lastDetectedTapDate = nil
@@ -720,7 +898,261 @@ final class AppModel: ObservableObject {
             return
         }
 
-        guard let side = classifier.classify(features) else {
+        let impact = PendingCustomGestureImpact(
+            features: features,
+            timestamp: ProcessInfo.processInfo.systemUptime
+        )
+        if customGesturePatterns.isEmpty {
+            handleStandardImpact(impact)
+        } else {
+            processCustomGestureImpact(impact)
+        }
+    }
+
+    private func startCustomGestureRepetition(_ repetition: Int) {
+        customGestureRecordingWorkItem?.cancel()
+        customGestureRecordingWorkItem = nil
+        customGestureCurrentEvents.removeAll(keepingCapacity: true)
+        customGestureLastEventAt = nil
+        customGestureArmedAt = ProcessInfo.processInfo.systemUptime
+            + Self.customGestureArmingDelay
+        customGestureTrainingState = .recording(repetition: repetition, eventCount: 0)
+    }
+
+    private func recordCustomGestureTrainingImpact(
+        _ features: ImpactFeatures,
+        timestamp: TimeInterval
+    ) {
+        guard case let .recording(repetition, _) = customGestureTrainingState,
+              timestamp >= customGestureArmedAt
+        else { return }
+
+        let interval = customGestureLastEventAt.map { timestamp - $0 } ?? 0
+        customGestureCurrentEvents.append(
+            CustomGestureEvent(
+                features: features.values,
+                intervalSincePrevious: interval
+            )
+        )
+        customGestureLastEventAt = timestamp
+        customGestureTrainingState = .recording(
+            repetition: repetition,
+            eventCount: customGestureCurrentEvents.count
+        )
+        statusMessage = customGestureTrainingState.prompt
+
+        customGestureRecordingWorkItem?.cancel()
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.finishCustomGestureRepetition()
+        }
+        customGestureRecordingWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + Self.customGestureRecordingSilence,
+            execute: workItem
+        )
+    }
+
+    private func finishCustomGestureRepetition() {
+        guard case let .recording(repetition, _) = customGestureTrainingState,
+              let draft = customGestureDraft,
+              !customGestureCurrentEvents.isEmpty
+        else { return }
+
+        customGestureRecordingWorkItem = nil
+        let candidate = CustomGestureSample(events: customGestureCurrentEvents)
+        customGestureCurrentEvents.removeAll(keepingCapacity: true)
+        customGestureLastEventAt = nil
+
+        if let expectedCount = customGestureTrainingSamples.first?.events.count,
+           candidate.events.count != expectedCount {
+            customGestureTrainingState = .ready(
+                repetition: repetition,
+                completed: customGestureTrainingSamples.count,
+                expectedEventCount: expectedCount,
+                message: "That sample had \(candidate.events.count) impacts; the learned pattern has \(expectedCount). Record sample \(repetition) again."
+            )
+            statusMessage = customGestureTrainingState.prompt
+            return
+        }
+
+        if !customGestureTrainingSamples.isEmpty,
+           !CustomGestureMatcher.samplesAreConsistent(
+                candidate,
+                with: customGestureTrainingSamples
+           ) {
+            let expectedCount = customGestureTrainingSamples[0].events.count
+            customGestureTrainingState = .ready(
+                repetition: repetition,
+                completed: customGestureTrainingSamples.count,
+                expectedEventCount: expectedCount,
+                message: "That performance didn't resemble the first sample closely enough. Record sample \(repetition) again."
+            )
+            statusMessage = customGestureTrainingState.prompt
+            return
+        }
+
+        customGestureTrainingSamples.append(candidate)
+        guard customGestureTrainingSamples.count
+                >= CustomGestureMatcher.requiredTrainingSampleCount
+        else {
+            customGestureTrainingState = .ready(
+                repetition: customGestureTrainingSamples.count + 1,
+                completed: customGestureTrainingSamples.count,
+                expectedEventCount: candidate.events.count,
+                message: nil
+            )
+            statusMessage = customGestureTrainingState.prompt
+            return
+        }
+
+        let learnedPattern = CustomGesturePattern(
+            id: draft.id,
+            name: draft.name,
+            action: draft.action,
+            samples: customGestureTrainingSamples
+        )
+        guard learnedPattern.isValid else {
+            cancelCustomGestureTraining()
+            statusMessage = "The pattern couldn't be saved. Please try learning it again."
+            return
+        }
+
+        if let index = customGesturePatterns.firstIndex(where: { $0.id == draft.id }) {
+            customGesturePatterns[index] = learnedPattern
+        } else {
+            customGesturePatterns.append(learnedPattern)
+        }
+        CustomGestureStore.save(customGesturePatterns, to: defaults)
+        customGestureDraft = nil
+        customGestureTrainingSamples.removeAll(keepingCapacity: true)
+        customGestureArmedAt = 0
+        customGestureTrainingState = .learned(name: learnedPattern.name)
+        sensorService.updateMinimumTapInterval(activeSensorMinimumTapInterval)
+        statusMessage = customGestureTrainingState.prompt
+    }
+
+    private func processCustomGestureImpact(_ impact: PendingCustomGestureImpact) {
+        let candidateImpacts = pendingCustomGestureImpacts + [impact]
+        let candidateEvents = customGestureEvents(from: candidateImpacts)
+        let fullMatch = CustomGestureMatcher.bestFullMatch(
+            for: candidateEvents,
+            among: customGesturePatterns
+        )
+        let matchingPrefixes = CustomGestureMatcher.matchingPrefixes(
+            for: candidateEvents,
+            among: customGesturePatterns
+        )
+        if !matchingPrefixes.isEmpty {
+            pendingCustomGestureImpacts = candidateImpacts
+            if let fullMatch {
+                // Prefer a longer code when one pattern is the prefix of
+                // another, but retain the completed shorter pattern as the
+                // timeout fallback.
+                pendingCompletedCustomGesture = fullMatch
+            }
+            schedulePendingCustomGestureTimeout(for: matchingPrefixes)
+            statusMessage = "Recognized the start of a custom pattern…"
+            return
+        }
+
+        if let fullMatch {
+            clearPendingCustomGestureRecognition()
+            performCustomGesture(fullMatch)
+            return
+        }
+
+        if !pendingCustomGestureImpacts.isEmpty {
+            let allImpacts = candidateImpacts
+            let completedPattern = pendingCompletedCustomGesture
+            clearPendingCustomGestureRecognition()
+            if let completedPattern {
+                performCustomGesture(completedPattern)
+                allImpacts
+                    .dropFirst(completedPattern.eventCount)
+                    .forEach(processCustomGestureImpact)
+            } else {
+                handleStandardImpact(allImpacts[0])
+                allImpacts.dropFirst().forEach(processCustomGestureImpact)
+            }
+            return
+        }
+
+        handleStandardImpact(impact)
+    }
+
+    private func schedulePendingCustomGestureTimeout(
+        for matchingPatterns: [CustomGesturePattern]
+    ) {
+        pendingCustomGestureWorkItem?.cancel()
+        let sequenceID = UUID()
+        pendingCustomGestureSequenceID = sequenceID
+        let timeout = CustomGestureMatcher.continuationTimeout(
+            afterEventCount: pendingCustomGestureImpacts.count,
+            for: matchingPatterns
+        )
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self, self.pendingCustomGestureSequenceID == sequenceID else { return }
+            self.flushPendingCustomGestureImpacts()
+        }
+        pendingCustomGestureWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + timeout, execute: workItem)
+    }
+
+    private func flushPendingCustomGestureImpacts() {
+        let impacts = pendingCustomGestureImpacts
+        let completedPattern = pendingCompletedCustomGesture
+        clearPendingCustomGestureRecognition()
+        if let completedPattern {
+            performCustomGesture(completedPattern)
+            impacts
+                .dropFirst(completedPattern.eventCount)
+                .forEach(processCustomGestureImpact)
+        } else {
+            guard let firstImpact = impacts.first else { return }
+            handleStandardImpact(firstImpact)
+            impacts.dropFirst().forEach(processCustomGestureImpact)
+        }
+    }
+
+    private func clearPendingCustomGestureRecognition() {
+        pendingCustomGestureWorkItem?.cancel()
+        pendingCustomGestureWorkItem = nil
+        pendingCustomGestureSequenceID = nil
+        pendingCustomGestureImpacts.removeAll(keepingCapacity: true)
+        pendingCompletedCustomGesture = nil
+    }
+
+    private func customGestureEvents(
+        from impacts: [PendingCustomGestureImpact]
+    ) -> [CustomGestureEvent] {
+        impacts.enumerated().map { index, impact in
+            CustomGestureEvent(
+                features: impact.features.values,
+                intervalSincePrevious: index == 0
+                    ? 0
+                    : impact.timestamp - impacts[index - 1].timestamp
+            )
+        }
+    }
+
+    private func performCustomGesture(_ pattern: CustomGesturePattern) {
+        appendImpactDiagnostic("matched custom pattern \(pattern.id.uuidString)")
+        lastTapSide = nil
+        guard SensorMonitoringPolicy.shouldPerformSpaceAction(isSlaptopEnabled: isEnabled) else {
+            statusMessage = "Detected \(pattern.name). Logging only; no action sent."
+            return
+        }
+
+        lastTapTriggeredAction = true
+        let successMessage = "\(pattern.name) → \(pattern.action.summary)"
+        statusMessage = "\(successMessage)…"
+        missionControlController.perform(pattern.action) { [weak self] result in
+            self?.finishSpaceAction(result, successMessage: successMessage)
+        }
+    }
+
+    private func handleStandardImpact(_ impact: PendingCustomGestureImpact) {
+        guard let side = classifier.classify(impact.features) else {
             lastTapSide = nil
             statusMessage = "Detected an impact that doesn't match a calibrated tap location."
             appendImpactDiagnostic("classified as no-match")
@@ -733,6 +1165,14 @@ final class AppModel: ObservableObject {
             return
         }
 
+        // Custom patterns keep the sensor at its fastest reporting interval
+        // so their rhythm is observable. Preserve the user's ordinary tap
+        // debounce here when that interval is slower.
+        guard impact.timestamp - lastStandardImpactAt >= minimumTapInterval else {
+            statusMessage = "Ignored a repeated \(side.label.lowercased()) tap during the minimum interval."
+            return
+        }
+        lastStandardImpactAt = impact.timestamp
         lastTapTriggeredAction = true
         let action = side.action(for: tapDirection)
         let binding = keyBinding(for: action)

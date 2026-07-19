@@ -14,9 +14,9 @@ enum MissionControlActionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .mustRunInstalledApplication:
-            return "Move Slaptop to /Applications before testing Space actions."
+            return "Move Slaptop to /Applications before testing actions."
         case .accessibilityPermissionRequired:
-            return "Allow Slaptop under Privacy & Security → Accessibility so it can use your Mission Control and Spaces shortcuts, then tap again."
+            return "Allow Slaptop under Privacy & Security → Accessibility so it can perform keyboard actions, then try again."
         case .keyEventCreationFailed:
             return "macOS did not accept the configured Mission Control shortcut keystroke."
         }
@@ -78,15 +78,36 @@ final class MissionControlController {
         _ binding: TapKeyBinding,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
+        performAutomation(completion: completion) {
+            try Self.postShortcut(binding)
+        }
+    }
+
+    func perform(
+        _ action: CustomGestureAction,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        performAutomation(completion: completion) {
+            switch action {
+            case let .keyboardShortcut(binding):
+                try Self.postShortcut(binding)
+            case let .typeText(text):
+                try Self.postText(text)
+            }
+        }
+    }
+
+    private func performAutomation(
+        completion: @escaping (Result<Void, Error>) -> Void,
+        operation: @escaping () throws -> Void
+    ) {
         guard Self.isInstalledApplication else {
             completion(.failure(MissionControlActionError.mustRunInstalledApplication))
             return
         }
 
         actionQueue.async {
-            let result = Result {
-                try Self.postShortcut(binding)
-            }
+            let result = Result(catching: operation)
             DispatchQueue.main.async {
                 completion(result)
             }
@@ -169,5 +190,39 @@ final class MissionControlController {
         keyUp.post(tap: .cghidEventTap)
         usleep(5_000)
         modifierUpEvents.forEach { $0.post(tap: .cghidEventTap) }
+    }
+
+    private static func postText(_ text: String) throws {
+        guard AXIsProcessTrusted() else {
+            throw MissionControlActionError.accessibilityPermissionRequired
+        }
+
+        guard
+            !text.isEmpty,
+            let source = CGEventSource(stateID: .hidSystemState),
+            let keyDown = CGEvent(
+                keyboardEventSource: source,
+                virtualKey: 0,
+                keyDown: true
+            ),
+            let keyUp = CGEvent(
+                keyboardEventSource: source,
+                virtualKey: 0,
+                keyDown: false
+            )
+        else {
+            throw MissionControlActionError.keyEventCreationFailed
+        }
+
+        let characters = Array(text.utf16)
+        characters.withUnsafeBufferPointer { buffer in
+            guard let baseAddress = buffer.baseAddress else { return }
+            keyDown.keyboardSetUnicodeString(
+                stringLength: buffer.count,
+                unicodeString: baseAddress
+            )
+        }
+        keyDown.post(tap: .cghidEventTap)
+        keyUp.post(tap: .cghidEventTap)
     }
 }
