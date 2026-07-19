@@ -12,6 +12,9 @@ final class MenuBarViewModel: ObservableObject {
     @Published private(set) var lastTapSide: TapSide?
     @Published private(set) var lastTapTriggeredAction: Bool
     @Published private(set) var tapDirection: TapDirectionPreference
+    /// Non-nil while an update check/download is in flight or has a result to
+    /// show; drives the caption under the menu rows.
+    @Published private(set) var updateStatus: String?
 
     private let model: AppModel
 
@@ -30,10 +33,37 @@ final class MenuBarViewModel: ObservableObject {
         model.$lastTapSide.removeDuplicates().assign(to: &$lastTapSide)
         model.$lastTapTriggeredAction.removeDuplicates().assign(to: &$lastTapTriggeredAction)
         model.$tapDirection.removeDuplicates().assign(to: &$tapDirection)
+        model.updater.$phase
+            .map(Self.updateStatusText(for:))
+            .removeDuplicates()
+            .assign(to: &$updateStatus)
     }
 
     func toggleEnabled() {
         model.toggleEnabled()
+    }
+
+    func checkForUpdates() {
+        model.updater.checkForUpdates()
+    }
+
+    private static func updateStatusText(for phase: AppUpdater.Phase) -> String? {
+        switch phase {
+        case .idle:
+            return nil
+        case .checking:
+            return "Checking for updates…"
+        case .upToDate:
+            return "Slaptop is up to date."
+        case let .availableButNotInstallable(tag):
+            return "Update \(tag) is available. Install Slaptop in /Applications to update automatically."
+        case let .downloading(tag):
+            return "Downloading Slaptop \(tag)…"
+        case let .installing(tag):
+            return "Installing Slaptop \(tag)… Slaptop will relaunch."
+        case let .failed(message):
+            return message
+        }
     }
 }
 
@@ -108,8 +138,20 @@ struct MenuBarView: View {
 
             VStack(spacing: 2) {
                 MenuBarRow(title: "Settings…", symbol: "slider.horizontal.3", action: showSettings)
+                MenuBarRow(
+                    title: "Check for Updates…",
+                    symbol: "arrow.down.circle",
+                    action: viewModel.checkForUpdates
+                )
                 MenuBarRow(title: "About Slaptop…", symbol: "info.circle", action: showAbout)
                 MenuBarRow(title: "Quit Slaptop", symbol: "power", action: quit)
+            }
+
+            if let updateStatus = viewModel.updateStatus {
+                Text(updateStatus)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(16)

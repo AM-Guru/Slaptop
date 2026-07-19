@@ -63,7 +63,7 @@ Slaptop checks this repository's GitHub releases for new versions — daily by d
 
 1. Open Settings → Sensor service → **Repair Sensor Service**.
 2. If macOS asks, re-approve Slaptop under System Settings → General → Login Items & Extensions → Allow in the Background.
-3. Still stuck? Toggle Slaptop off and on in that same Login Items list, then enable Slaptop again.
+3. Still stuck? Toggle Slaptop off and on in that same Login Items list, then enable Slaptop again. On some macOS releases (observed on the macOS 26/27 betas) this toggle — or a restart — is the *only* thing that clears the stale launch constraint: Background Task Management keeps the constraint from the original approval even after a clean re-registration, so Slaptop's automatic repair detects this state and opens the Login Items pane with instructions.
 4. Last resort: `sudo sfltool resetbtm` resets the Background Task Management database (this affects other apps' background items too — they will need re-approval), then reboot and enable Slaptop.
 
 Note this state lives in Background Task Management, not in TCC/privacy permissions — the Accessibility grant for Space switching is unaffected and does not need to be re-granted.

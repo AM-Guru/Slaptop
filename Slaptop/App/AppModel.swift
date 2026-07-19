@@ -311,7 +311,8 @@ final class AppModel: ObservableObject {
                         self.statusMessage = "Sensor service reinstalled. Enable Slaptop to reconnect."
                     }
                 case .failure(let error):
-                    self.statusMessage = "Repair failed: \(error.localizedDescription). Toggle Slaptop off and on in System Settings → General → Login Items, then try again."
+                    self.sensorService.openApprovalSettings()
+                    self.statusMessage = "Repair failed: \(error.localizedDescription). In the Login Items window that just opened, switch Slaptop off and back on under Allow in the Background, then try again. Restarting your Mac also clears this."
                 }
             }
         }
@@ -461,8 +462,14 @@ final class AppModel: ObservableObject {
         case .unreachable(let message):
             isSensorRunning = false
             guard !hasAttemptedServiceRepair else {
+                // Reinstalling the registration did not help: on some macOS
+                // releases Background Task Management keeps the original
+                // approval's launch constraint until the user toggles the
+                // item or restarts, so hand the user that exact instruction
+                // with the right Settings pane already open.
                 cancelMonitoringRequest(request)
-                statusMessage = "\(message) Use Repair Sensor Service in Settings, then re-approve Slaptop in Login Items if asked."
+                sensorService.openApprovalSettings()
+                statusMessage = "macOS is still blocking the updated sensor helper. In the Login Items window that just opened, switch Slaptop off and back on under Allow in the Background, then enable Slaptop again. Restarting your Mac also clears this."
                 return
             }
             // An unreachable daemon usually means launchd is killing its
