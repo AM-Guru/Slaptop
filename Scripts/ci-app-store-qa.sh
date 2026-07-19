@@ -26,7 +26,7 @@ required=(
 )
 for name in "${required[@]}"; do
   if [[ -z "${!name:-}" ]]; then
-    echo "Missing required App Store QA environment value: ${name}" >&2
+    echo "Missing required App Store submission environment value: ${name}" >&2
     exit 1
   fi
 done
@@ -137,9 +137,29 @@ bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "${info_plis
 app_version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${info_plist}")"
 build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "${info_plist}")"
 category="$(/usr/libexec/PlistBuddy -c 'Print :LSApplicationCategoryType' "${info_plist}")"
+icon_name="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "${info_plist}")"
+uses_non_exempt_encryption="$(/usr/libexec/PlistBuddy -c 'Print :ITSAppUsesNonExemptEncryption' "${info_plist}")"
 [[ "${bundle_id}" == "guru.am.slaptop" ]]
 [[ "${build_number}" == "${GITHUB_RUN_NUMBER}" ]]
 [[ "${category}" == "public.app-category.utilities" ]]
+[[ "${icon_name}" == "Slaptop-icon" ]]
+[[ "${uses_non_exempt_encryption}" == "false" ]]
+
+icon_path="${app_path}/Contents/Resources/${icon_name}.icns"
+asset_catalog_path="${app_path}/Contents/Resources/Assets.car"
+asset_info_path="${work_dir}/asset-info.plist"
+asset_dump_path="${work_dir}/asset-info.txt"
+[[ -s "${icon_path}" ]]
+[[ -s "${asset_catalog_path}" ]]
+xcrun assetutil --info "${asset_catalog_path}" \
+  | /usr/bin/plutil -convert xml1 -o "${asset_info_path}" -- -
+/usr/bin/plutil -p "${asset_info_path}" > "${asset_dump_path}"
+if ! /usr/bin/grep -Eq \
+  '"RenditionName" => "Slaptop-icon1024x1024_' \
+  "${asset_dump_path}"; then
+  echo "The App Store build does not contain a 1024x1024 Slaptop app-icon rendition." >&2
+  exit 1
+fi
 codesign --verify --deep --strict --verbose=2 "${app_path}"
 
 entitlements_path="${work_dir}/archived-entitlements.plist"
@@ -184,4 +204,4 @@ xcodebuild \
   -authenticationKeyID "${APP_STORE_CONNECT_KEY_ID}" \
   -authenticationKeyIssuerID "${APP_STORE_CONNECT_ISSUER_ID}"
 
-echo "Uploaded Slaptop ${app_version} (${build_number}) to App Store Connect for internal TestFlight QA."
+echo "Uploaded Slaptop ${app_version} (${build_number}) to App Store Connect for TestFlight QA and App Store review."

@@ -31,21 +31,9 @@ gh auth status >/dev/null 2>&1 || fail "gh is not authenticated"
 [[ "$(gh repo view "${REPOSITORY}" --json viewerPermission --jq .viewerPermission)" == "ADMIN" ]] \
   || fail "${OWNER} needs repository admin access"
 
-configured_reviewer="$({
-  gh api "repos/${REPOSITORY}/environments/${ENVIRONMENT_NAME}" \
-    --jq '.protection_rules[] | select(.type == "required_reviewers") | .reviewers[0].reviewer.login'
-} 2>/dev/null || true)"
 requested_independent_reviewer="${INDEPENDENT_RELEASE_REVIEWER}"
-if [[ -z "${requested_independent_reviewer}" \
-      && -n "${configured_reviewer}" \
-      && "${configured_reviewer}" != "${OWNER}" ]]; then
-  # Once independent review is enabled, later maintenance runs preserve it
-  # even if the caller omits the opt-in environment variable.
-  requested_independent_reviewer="${configured_reviewer}"
-fi
 
-release_reviewer="${OWNER}"
-prevent_self_review=false
+independent_reviewer=""
 required_reviews_json='null'
 independent_review_required=false
 if [[ -n "${requested_independent_reviewer}" ]]; then
@@ -60,8 +48,7 @@ if [[ -n "${requested_independent_reviewer}" ]]; then
     admin|maintain|write) ;;
     *) fail "${requested_independent_reviewer} needs write access to provide a required review" ;;
   esac
-  release_reviewer="${requested_independent_reviewer}"
-  prevent_self_review=true
+  independent_reviewer="${requested_independent_reviewer}"
   independent_review_required=true
   required_reviews_json='{
     "dismiss_stale_reviews": true,
@@ -77,7 +64,6 @@ gh api "repos/${REPOSITORY}/contents/.github/workflows/release.yml?ref=main" >/d
   || fail "merge the reviewed release workflow to main before finalizing the runner group"
 
 repository_id="$(gh api "repos/${REPOSITORY}" --jq .id)"
-reviewer_id="$(gh api "users/${release_reviewer}" --jq .id)"
 group_id="$(
   gh api orgs/AM-Guru/actions/runner-groups \
     --jq ".runner_groups[] | select(.name == \"${GROUP_NAME}\") | .id"
@@ -118,13 +104,18 @@ JSON
 gh api --method POST "repos/${REPOSITORY}/branches/main/protection/required_signatures" >/dev/null
 
 gh api --method PUT "repos/${REPOSITORY}/environments/${ENVIRONMENT_NAME}" \
-  -F wait_timer=0 \
-  -F "prevent_self_review=${prevent_self_review}" \
-  -F can_admins_bypass=false \
-  -f 'reviewers[][type]=User' \
-  -F "reviewers[][id]=${reviewer_id}" \
-  -F 'deployment_branch_policy[protected_branches]=false' \
-  -F 'deployment_branch_policy[custom_branch_policies]=true' >/dev/null
+  --input - >/dev/null <<'JSON'
+{
+  "wait_timer": 0,
+  "prevent_self_review": false,
+  "can_admins_bypass": false,
+  "reviewers": [],
+  "deployment_branch_policy": {
+    "protected_branches": false,
+    "custom_branch_policies": true
+  }
+}
+JSON
 
 deployment_policy_endpoint="repos/${REPOSITORY}/environments/${ENVIRONMENT_NAME}/deployment-branch-policies"
 while IFS= read -r policy_id; do
@@ -156,7 +147,7 @@ gh api --method PUT "repos/${REPOSITORY}/actions/permissions/selected-actions" \
 
 unexpected_push_collaborators="$(
   gh api "repos/${REPOSITORY}/collaborators" --paginate \
-    --jq ".[] | select(.login != \"${OWNER}\" and .login != \"${release_reviewer}\" and .permissions.push == true) | .login"
+    --jq ".[] | select(.login != \"${OWNER}\" and .login != \"${independent_reviewer}\" and .permissions.push == true) | .login"
 )"
 [[ -z "${unexpected_push_collaborators}" ]] \
   || fail "unexpected push-capable collaborators: ${unexpected_push_collaborators}"
@@ -216,14 +207,9 @@ expect_api_value \
   'release environment custom-branch policy'
 expect_api_value \
   "repos/${REPOSITORY}/environments/${ENVIRONMENT_NAME}" \
-  '.protection_rules[] | select(.type == "required_reviewers") | .prevent_self_review' \
-  "${prevent_self_review}" \
-  'release environment self-review policy'
-expect_api_value \
-  "repos/${REPOSITORY}/environments/${ENVIRONMENT_NAME}" \
-  '.protection_rules[] | select(.type == "required_reviewers") | .reviewers[0].reviewer.login' \
-  "${release_reviewer}" \
-  'release environment reviewer'
+  '[.protection_rules[] | select(.type == "required_reviewers")] | length' \
+  '0' \
+  'release environment required-reviewer count'
 expect_api_value "${deployment_policy_endpoint}" '.total_count' '1' 'release branch-policy count'
 expect_api_value "${deployment_policy_endpoint}" '.branch_policies[0].name' 'main' 'release branch policy'
 
@@ -238,4 +224,4 @@ codeowners="$(
 [[ "${codeowners}" == *"* @${OWNER}"* ]] \
   || fail "main does not assign the repository to @${OWNER} in CODEOWNERS"
 
-echo "GitHub main protection, release approval, secret scanning, Actions, and runner policies are enforced."
+echo "GitHub main protection, automatic release environment, secret scanning, Actions, and runner policies are enforced."

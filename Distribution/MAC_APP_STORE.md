@@ -1,12 +1,13 @@
 # Mac App Store build
 
-`SlaptopAppStore` is a separate Xcode target for internal TestFlight and App Review evaluation. It keeps the `guru.am.slaptop` product identity but deliberately differs from the Developer ID build:
+`SlaptopAppStore` is a separate Xcode target for TestFlight and App Review evaluation. Its uploaded builds remain eligible for public App Store submission while they are tested internally. It keeps the `guru.am.slaptop` product identity but deliberately differs from the Developer ID build:
 
 - App Sandbox is enabled.
 - The GitHub updater and all updater UI are excluded.
 - No privileged helper, launch daemon, ServiceManagement dependency, or background-item UI is included.
 - AppleSPU reports are read in-process and are never written to disk or sent over the network.
 - `LSApplicationCategoryType` is `public.app-category.utilities`.
+- `ITSAppUsesNonExemptEncryption` is `false`; the App Store target contains neither the updater nor other cryptographic code.
 - The MIT license and third-party notices are embedded in the app bundle.
 
 The Developer ID `Slaptop` target continues to use its privileged sensor helper and GitHub updater. Generate the project with `xcodegen generate`, then select the `SlaptopAppStore` scheme when testing this variant.

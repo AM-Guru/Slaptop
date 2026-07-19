@@ -140,6 +140,14 @@ expect_equal "ref name" "${GITHUB_REF_NAME}" "main"
 expect_equal "ref type" "${GITHUB_REF_TYPE}" "branch"
 expect_equal "Apple team" "${APPLE_TEAM_ID}" "${EXPECTED_TEAM_ID}"
 if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
+  for path in \
+    Distribution/DMG/background.png \
+    Distribution/dmg-requirements.txt \
+    Distribution/dmg-settings.py \
+    Scripts/verify-dmg-layout.py; do
+    [[ -f "${GITHUB_WORKSPACE}/${path}" ]] \
+      || fail "GitHub release packaging file ${path} is missing"
+  done
   expect_equal \
     "Developer ID identity" \
     "${DEVELOPER_ID_APPLICATION}" \
@@ -206,6 +214,14 @@ else
     "$(plist_value LSApplicationCategoryType "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
     "public.app-category.utilities"
   expect_equal \
+    "App Store icon name" \
+    "$(plist_value CFBundleIconName "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
+    "Slaptop-icon"
+  expect_equal \
+    "App Store export-compliance declaration" \
+    "$(plist_value ITSAppUsesNonExemptEncryption "${GITHUB_WORKSPACE}/Resources/SlaptopAppStore-Info.plist")" \
+    "false"
+  expect_equal \
     "App Store sandbox entitlement" \
     "$(/usr/libexec/PlistBuddy -c 'Print :com.apple.security.app-sandbox' "${GITHUB_WORKSPACE}/Distribution/SlaptopAppStore.entitlements")" \
     "true"
@@ -235,18 +251,21 @@ else
     "$(plist_value signingStyle "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
     "automatic"
   expect_equal \
-    "App Store internal-testing restriction" \
+    "App Store public-submission eligibility" \
     "$(plist_value testFlightInternalTestingOnly "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
-    "true"
+    "false"
 fi
 
 if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
   legacy_paths=(
     Resources/Slaptop-Info.plist
     Resources/LaunchDaemons
+    Distribution/dmg-requirements.txt
+    Distribution/dmg-settings.py
     Slaptop
     Shared
     SlaptopSensorDaemon
+    Scripts/verify-dmg-layout.py
   )
 else
   legacy_paths=(
@@ -336,6 +355,10 @@ else
     "App Store entitlements path" \
     "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" CODE_SIGN_ENTITLEMENTS)" \
     "Distribution/SlaptopAppStore.entitlements"
+  expect_equal \
+    "App Store app-icon build setting" \
+    "$(resolved_setting "${VALIDATION_DIR}/SlaptopAppStore-settings.json" ASSETCATALOG_COMPILER_APPICON_NAME)" \
+    "Slaptop-icon"
   validate_pkcs12 \
     APP_STORE_DEVELOPMENT_P12_BASE64 \
     APP_STORE_DEVELOPMENT_P12_PASSWORD \

@@ -15,7 +15,7 @@
 	<key>teamID</key>
 	<string>59A594LZGR</string>
 	<key>testFlightInternalTestingOnly</key>
-	<true/>
+	<false/>
 	<key>uploadSymbols</key>
 	<true/>
 </dict>

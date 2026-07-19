@@ -42,16 +42,16 @@ KEYCHAIN_PATH="${WORK_DIR}/release-signing.keychain-db"
 P12_PATH="${WORK_DIR}/developer-id.p12"
 ASC_KEY_PATH="${WORK_DIR}/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
 APP_ZIP_PATH="${WORK_DIR}/Slaptop-notarization.zip"
-DMG_ROOT="${WORK_DIR}/dmg-root"
-DMG_RW_PATH="${WORK_DIR}/Slaptop-rw.dmg"
 DMG_PATH="${WORK_DIR}/Slaptop.dmg"
 MOUNT_POINT="${WORK_DIR}/mounted-dmg"
 DMG_BACKGROUND_PATH="${GITHUB_WORKSPACE}/Distribution/DMG/background.png"
-DMG_LAYOUT_SCRIPT="${GITHUB_WORKSPACE}/Scripts/configure-dmg.applescript"
+DMGBUILD_REQUIREMENTS="${GITHUB_WORKSPACE}/Distribution/dmg-requirements.txt"
+DMGBUILD_SETTINGS="${GITHUB_WORKSPACE}/Distribution/dmg-settings.py"
+DMGBUILD_VENV="${WORK_DIR}/dmgbuild-venv"
+DMG_LAYOUT_VERIFIER="${GITHUB_WORKSPACE}/Scripts/verify-dmg-layout.py"
 KEYCHAIN_PASSWORD="$(openssl rand -hex 32)"
 ORIGINAL_KEYCHAINS=()
 DMG_IS_MOUNTED=false
-DMG_LAYOUT_APPLIED=false
 APP_PATH=""
 LSREGISTER='/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister'
 
@@ -106,6 +106,24 @@ if ! security find-identity -v -p codesigning "${KEYCHAIN_PATH}" \
   exit 1
 fi
 
+for path in \
+  "${DMG_BACKGROUND_PATH}" \
+  "${DMGBUILD_REQUIREMENTS}" \
+  "${DMGBUILD_SETTINGS}" \
+  "${DMG_LAYOUT_VERIFIER}"; do
+  if [[ ! -f "${path}" ]]; then
+    echo "Missing required DMG packaging file: ${path}" >&2
+    exit 1
+  fi
+done
+
+PYTHON3_PATH="$(xcrun --find python3)"
+"${PYTHON3_PATH}" -m venv "${DMGBUILD_VENV}"
+"${DMGBUILD_VENV}/bin/python" -m pip install \
+  --disable-pip-version-check \
+  --require-hashes \
+  --requirement "${DMGBUILD_REQUIREMENTS}"
+
 # Keep imported keys private, but create the app and disk-image payload with
 # normal distributable permissions.
 umask 022
@@ -134,8 +152,6 @@ APP_THIRD_PARTY_NOTICES_PATH="${APP_PATH}/Contents/Resources/THIRD_PARTY_NOTICES
 [[ -d "${APP_PATH}" ]]
 [[ -x "${HELPER_PATH}" ]]
 [[ -f "${APP_PATH}/Contents/Library/LaunchDaemons/guru.am.slaptop.sensor-daemon.plist" ]]
-[[ -f "${DMG_BACKGROUND_PATH}" ]]
-[[ -f "${DMG_LAYOUT_SCRIPT}" ]]
 
 /usr/bin/install -m 0644 "${GITHUB_WORKSPACE}/LICENSE" "${APP_LICENSE_PATH}"
 /usr/bin/install -m 0644 "${GITHUB_WORKSPACE}/THIRD_PARTY_NOTICES.md" "${APP_THIRD_PARTY_NOTICES_PATH}"
@@ -205,40 +221,14 @@ xcrun stapler staple "${APP_PATH}"
 xcrun stapler validate "${APP_PATH}"
 spctl -a -vvv -t exec "${APP_PATH}"
 
-mkdir -p "${DMG_ROOT}/.background"
-ditto "${APP_PATH}" "${DMG_ROOT}/Slaptop.app"
-ln -s /Applications "${DMG_ROOT}/Applications"
-/usr/bin/install -m 0644 "${DMG_BACKGROUND_PATH}" "${DMG_ROOT}/.background/background.png"
-hdiutil create \
-  -volname Slaptop \
-  -srcfolder "${DMG_ROOT}" \
-  -format UDRW \
-  -ov \
-  "${DMG_RW_PATH}"
-
-mkdir -p "${MOUNT_POINT}"
-hdiutil attach \
-  -readwrite \
-  -noverify \
-  -noautoopen \
-  -mountpoint "${MOUNT_POINT}" \
-  "${DMG_RW_PATH}" >/dev/null
-DMG_IS_MOUNTED=true
-if /usr/bin/osascript "${DMG_LAYOUT_SCRIPT}" "${MOUNT_POINT}"; then
-  DMG_LAYOUT_APPLIED=true
-else
-  echo "::warning title=DMG Finder layout::Finder did not finish the optional DMG layout. Publishing the verified drag-to-install image without custom window metadata."
-fi
-/bin/sync
-hdiutil detach "${MOUNT_POINT}" -quiet
-DMG_IS_MOUNTED=false
-
-hdiutil convert \
-  "${DMG_RW_PATH}" \
-  -format UDZO \
-  -imagekey zlib-level=9 \
-  -ov \
-  -o "${DMG_PATH}"
+"${DMGBUILD_VENV}/bin/dmgbuild" \
+  --no-hidpi \
+  --detach-retries 10 \
+  --settings "${DMGBUILD_SETTINGS}" \
+  -D "app_path=${APP_PATH}" \
+  -D "background_path=${DMG_BACKGROUND_PATH}" \
+  Slaptop \
+  "${DMG_PATH}"
 
 codesign \
   --force \
@@ -265,16 +255,13 @@ APPLICATIONS_LINK="$(readlink "${MOUNT_POINT}/Applications" 2>/dev/null || true)
 if [[ "${VISIBLE_ENTRY_COUNT}" != "2" \
   || ! -d "${MOUNT_POINT}/Slaptop.app" \
   || "${APPLICATIONS_LINK}" != "/Applications" \
-  || ! -f "${MOUNT_POINT}/.background/background.png" ]] \
-  || ! cmp -s "${DMG_BACKGROUND_PATH}" "${MOUNT_POINT}/.background/background.png"; then
+  || ! -f "${MOUNT_POINT}/.background.png" ]] \
+  || ! cmp -s "${DMG_BACKGROUND_PATH}" "${MOUNT_POINT}/.background.png"; then
   echo "Slaptop.dmg must contain the app, Applications shortcut, and background asset." >&2
   find "${MOUNT_POINT}" -mindepth 1 -maxdepth 1 -print >&2
   exit 1
 fi
-if [[ "${DMG_LAYOUT_APPLIED}" == true && ! -s "${MOUNT_POINT}/.DS_Store" ]]; then
-  echo "Finder reported a successful DMG layout but did not save its metadata." >&2
-  exit 1
-fi
+"${DMGBUILD_VENV}/bin/python" "${DMG_LAYOUT_VERIFIER}" "${MOUNT_POINT}"
 
 hdiutil detach "${MOUNT_POINT}" -quiet
 DMG_IS_MOUNTED=false

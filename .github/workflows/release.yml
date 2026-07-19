@@ -61,6 +61,7 @@ jobs:
           command -v security >/dev/null
           command -v codesign >/dev/null
           command -v hdiutil >/dev/null
+          command -v xcrun >/dev/null
           command -v gh >/dev/null
 
       - name: Ensure XcodeGen is available
@@ -118,7 +119,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       github.ref_type == 'branch'
-    name: Upload Mac App Store QA build
+    name: Upload Mac App Store submission candidate
     runs-on:
       group: slaptop-main-release
       labels: [self-hosted, macOS, macos-build, xcode]
@@ -159,6 +160,7 @@ jobs:
           [[ -x "${DEVELOPER_DIR}/usr/bin/xcodebuild" ]]
           command -v security >/dev/null
           command -v codesign >/dev/null
+          command -v xcrun >/dev/null
 
       - name: Ensure XcodeGen is available
         shell: bash
@@ -182,7 +184,7 @@ jobs:
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: Scripts/validate-release-configuration.sh app-store
 
-      - name: Package and upload Mac App Store QA build
+      - name: Package and upload Mac App Store submission candidate
         shell: bash
         env:
           APP_STORE_DEVELOPMENT_P12_BASE64: ${{ secrets.APP_STORE_DEVELOPMENT_P12_BASE64 }}
