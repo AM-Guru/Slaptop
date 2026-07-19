@@ -1,10 +1,10 @@
 # Slaptop for macOS
 
-Slaptop is a modern Apple-silicon remake of Kalani Helekunihi's 2005 utility. A left-side tap moves one Space left, a right-side tap moves one Space right, and a top-edge tap launches Mission Control. A "Tap direction" setting offers Natural (default — move toward the tapped side) and Inverted (the classic push-the-content mapping). Space switches work by pressing the standard Mission Control shortcuts (⌃← ⌃→) on your behalf, which works with full-screen apps.
+Slaptop is a modern Apple-silicon remake of Kalani Helekunihi's 2005 utility. A left-side tap moves one Space left, a right-side tap moves one Space right, and a top-edge tap launches Mission Control. A "Tap direction" setting offers Natural (default — move toward the tapped side) and Inverted (the classic push-the-content mapping). The default Mission Control shortcuts are ⌃←, ⌃→, and ⌃↑. Users who changed those system-wide shortcuts can enter their matching bindings under Settings → Space Mapping.
 
 ## Website
 
-The project website is available at [slaptop.am.guru](https://slaptop.am.guru). Its dependency-free source lives in [`website/`](website/) and includes a browser port of the animation from Slaptop's About screen.
+The project website is available at [slaptop.am.guru](https://slaptop.am.guru). Its dependency-free source lives in [`website/`](website/) and includes a browser port of the animation from Slaptop's About screen, plus the project [Privacy Policy](https://slaptop.am.guru/privacy.html) and [Terms of Service](https://slaptop.am.guru/terms.html).
 
 ## Requirements
 
@@ -33,9 +33,9 @@ On a fresh install, Slaptop opens a one-time setup window with its About animati
 
 The setup window shows a green checkmark when macOS grants sensor access. **Travel Spaces** completes the setup and enables Slaptop after the sensor helper is approved. Existing users with a saved enable/disable preference are not shown onboarding retroactively.
 
-Slaptop switches Spaces by synthesizing the standard Mission Control shortcuts (⌃← and ⌃→), which requires granting Slaptop Accessibility access and keeping those default key bindings enabled. Top-edge taps open the system Mission Control application directly. Direct manipulation of managed Spaces through the private SkyLight API was evaluated but only updates WindowServer's current-space record on modern macOS without compositing the change on screen.
+Slaptop switches Spaces and opens Mission Control by synthesizing the configured Mission Control shortcuts, which requires granting Slaptop Accessibility access. The defaults are ⌃←, ⌃→, and ⌃↑; each binding can be changed to match a user's system-wide Mission Control settings. Direct manipulation of managed Spaces through the private SkyLight API was evaluated but only updates WindowServer's current-space record on modern macOS without compositing the change on screen.
 
-Slaptop synthesizes only those two Mission Control key shortcuts, and only in response to a detected tap. It never moves, warps, clicks, or otherwise takes control of the pointer.
+Slaptop synthesizes one of these Mission Control and Spaces shortcuts only in response to a detected tap or its adjacent Test button. It never moves, warps, clicks, or otherwise takes control of the pointer. The bindings are stored locally in UserDefaults and can be restored together from the button beside Tap Direction.
 
 ## Calibration
 

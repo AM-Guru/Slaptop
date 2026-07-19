@@ -42,7 +42,7 @@ struct FirstLaunchView: View {
 
                 SetupPermissionRow(
                     title: "Space switching (Accessibility)",
-                    detail: "Presses the Mission Control shortcuts (⌃← ⌃→) to switch Spaces.",
+                    detail: "Presses the Mission Control and Spaces shortcuts (defaults: ⌃←, ⌃→, and ⌃↑).",
                     status: model.isAccessibilityTrusted ? "Approved" : "Needs approval",
                     isGranted: model.isAccessibilityTrusted,
                     requestPermission: model.requestAccessibilityPermission

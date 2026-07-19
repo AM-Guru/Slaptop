@@ -38,6 +38,52 @@ final class TapClassifierTests: XCTestCase {
         XCTAssertEqual(TapDirectionPreference.inverted.label, "Inverted")
     }
 
+    func testSpaceKeyBindingsHaveExpectedMissionControlDefaults() {
+        let bindings = SpaceKeyBindings.standard
+
+        XCTAssertEqual(bindings.switchLeft.displayString, "⌃←")
+        XCTAssertEqual(bindings.switchRight.displayString, "⌃→")
+        XCTAssertEqual(bindings.launchMissionControl.displayString, "⌃↑")
+        XCTAssertEqual(bindings.switchLeft.accessibilityDescription, "Control Left Arrow")
+        XCTAssertEqual(bindings.launchMissionControl.accessibilityDescription, "Control Up Arrow")
+        XCTAssertEqual(TapKeyBinding(keyCode: 10, modifiers: []).displayString, "Key 10")
+    }
+
+    func testSpaceKeyBindingsPersistAndRejectInvalidStoredValues() throws {
+        var bindings = SpaceKeyBindings.standard
+        let commandK = TapKeyBinding(keyCode: 40, modifiers: [.command, .shift])
+        bindings.set(commandK, for: .launchMissionControl)
+        bindings.save(to: defaults)
+
+        XCTAssertEqual(SpaceKeyBindings.load(from: defaults), bindings)
+        XCTAssertEqual(
+            SpaceKeyBindings.load(from: defaults).binding(for: .launchMissionControl).displayString,
+            "⇧⌘K"
+        )
+
+        let invalid = SpaceKeyBindings(
+            switchLeft: TapKeyBinding(keyCode: 999, modifiers: []),
+            switchRight: bindings.switchRight,
+            launchMissionControl: bindings.launchMissionControl
+        )
+        defaults.set(try JSONEncoder().encode(invalid), forKey: SpaceKeyBindings.defaultsKey)
+        XCTAssertEqual(SpaceKeyBindings.load(from: defaults), .standard)
+    }
+
+    @MainActor
+    func testAppModelUpdatesAndRestoresKeyBindings() {
+        let model = AppModel(defaults: defaults, automaticallyEnable: false)
+        let custom = TapKeyBinding(keyCode: 0, modifiers: [.control, .option])
+
+        model.setKeyBinding(custom, for: .switchLeft)
+        XCTAssertEqual(model.keyBinding(for: .switchLeft), custom)
+        XCTAssertEqual(SpaceKeyBindings.load(from: defaults).switchLeft, custom)
+
+        model.restoreDefaultKeyBindings()
+        XCTAssertEqual(model.keyBindings, .standard)
+        XCTAssertNil(defaults.data(forKey: SpaceKeyBindings.defaultsKey))
+    }
+
     func testActionsAreOnlyAvailableToCanonicalInstalledBundle() {
         XCTAssertTrue(
             MissionControlController.isInstalledApplication(

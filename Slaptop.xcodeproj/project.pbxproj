@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		03F1C7ECEDA4E940B9E0A968 /* TapKeyBinding.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33DF5E6852E600D7A9EA3709 /* TapKeyBinding.swift */; };
 		092679867606E8E3343B4899 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65ACB4D2F7937CF7DC18B27 /* SettingsView.swift */; };
 		0A5AF4B023A25936DDCF13BA /* MotionFeatureDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 307D456250031D6388F6813E /* MotionFeatureDetector.swift */; };
 		16829FA25630C16629E91635 /* SensorMonitoringPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */; };
@@ -89,6 +90,7 @@
 		2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapClassifier.swift; sourceTree = "<group>"; };
 		2EEC7F5605AFB2F8B8457953 /* TapTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapTiming.swift; sourceTree = "<group>"; };
 		307D456250031D6388F6813E /* MotionFeatureDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MotionFeatureDetector.swift; sourceTree = "<group>"; };
+		33DF5E6852E600D7A9EA3709 /* TapKeyBinding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapKeyBinding.swift; sourceTree = "<group>"; };
 		381C426C4DD3A0123AE5DC08 /* AppUpdater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppUpdater.swift; sourceTree = "<group>"; };
 		387F4BA983B6B08C6FCB04CE /* ImpactFeatures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImpactFeatures.swift; sourceTree = "<group>"; };
 		3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SensorMonitoringPolicy.swift; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 				4EF7B9DA21D1A0BEBA98CFC9 /* SensorChartScale.swift */,
 				3A507C40C02A972511B5EEF4 /* SensorMonitoringPolicy.swift */,
 				2DC4C25B66BD328C70A09D4D /* TapClassifier.swift */,
+				33DF5E6852E600D7A9EA3709 /* TapKeyBinding.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -450,6 +453,7 @@
 				092679867606E8E3343B4899 /* SettingsView.swift in Sources */,
 				21339BF1B57ABCA5863723AC /* SlaptopApp.swift in Sources */,
 				C0C87BF3B21DB821A2ABA3F8 /* TapClassifier.swift in Sources */,
+				03F1C7ECEDA4E940B9E0A968 /* TapKeyBinding.swift in Sources */,
 				CD10D1C7E00C6026490AE557 /* TapSensitivity.swift in Sources */,
 				7FBFDD7309AD610844363637 /* TapTiming.swift in Sources */,
 			);
@@ -551,6 +555,7 @@
 				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 59A594LZGR;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -565,6 +570,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;
@@ -647,6 +653,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 26;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 59A594LZGR;
 				ENABLE_HARDENED_RUNTIME = NO;
@@ -667,6 +674,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = NO;

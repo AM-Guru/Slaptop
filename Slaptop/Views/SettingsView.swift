@@ -1,6 +1,7 @@
 // Copyright © 2026 Kalani Helekunihi and AM Guru, LLC.
 // This source code is licensed under the MIT License. See LICENSE for details.
 
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
@@ -27,10 +28,14 @@ struct SettingsView: View {
                     updatesSection
                     advancedSection
                 }
-                .padding(24)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
+                // Keep the first section heading clear of NSScrollView's
+                // content-edge clipping at the initial zero offset.
+                .padding(.top, 32)
             }
         }
-        .frame(width: 520, height: 610)
+        .frame(width: 680, height: 720)
         .onAppear(perform: model.refreshSystemState)
         .task {
             // Live-refresh permission state so granting Accessibility in
@@ -92,9 +97,10 @@ struct SettingsView: View {
                 }
             }
 
-            Text("The motion sensor helper reads display taps. Accessibility access lets Slaptop press the Mission Control shortcuts (⌃← ⌃→) that switch Spaces.")
+            Text("The motion sensor helper reads display taps. Accessibility access lets Slaptop press the Mission Control and Spaces shortcuts configured under Space Mapping (defaults: ⌃←, ⌃→, and ⌃↑).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -117,6 +123,7 @@ struct SettingsView: View {
                 Text("Lower values detect gentler taps. Raise this if typing or desk movement causes switches.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Divider()
@@ -138,6 +145,7 @@ struct SettingsView: View {
                 Text("Shorter intervals allow faster repeated Space changes. The fastest setting accepts up to three deliberate taps per second.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             if let magnitude = model.lastImpactMagnitude {
@@ -166,6 +174,7 @@ struct SettingsView: View {
             Text(model.calibrationState.prompt)
                 .font(.callout)
                 .foregroundStyle(calibrationPromptColor)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Sample rejections ("wrong direction", "below threshold") were
             // previously only visible in the menu bar popover, making a
@@ -175,11 +184,13 @@ struct SettingsView: View {
                 Label(model.statusMessage, systemImage: "exclamationmark.bubble")
                     .font(.callout)
                     .foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Text("Training accepts impacts of \(model.sensitivity.formatted(.number.precision(.fractionLength(2)))) g or stronger that rotate toward the selected location.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             HStack {
                 Button {
@@ -217,25 +228,39 @@ struct SettingsView: View {
 
     private var mappingSection: some View {
         SettingsSection(title: "Space mapping", symbol: "rectangle.3.group") {
-            Picker("Tap direction", selection: $model.tapDirection) {
-                ForEach(TapDirectionPreference.allCases, id: \.self) { preference in
-                    Text(preference.label).tag(preference)
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Picker("Tap direction", selection: $model.tapDirection) {
+                    ForEach(TapDirectionPreference.allCases, id: \.self) { preference in
+                        Text(preference.label).tag(preference)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .layoutPriority(1)
+
+                Button {
+                    model.restoreDefaultKeyBindings()
+                } label: {
+                    Label("Restore Defaults", systemImage: "arrow.counterclockwise")
+                }
+                .controlSize(.small)
+                .disabled(model.keyBindings == .standard)
+                .help("Restore ⌃←, ⌃→, and ⌃↑")
             }
-            .pickerStyle(.segmented)
 
             Text(model.tapDirection == .natural
                 ? "Natural: tapping a side moves to the Space on that side."
                 : "Inverted: tapping a side pushes the desktop the other way.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             mappingRow(for: .left)
             mappingRow(for: .right)
             mappingRow(for: .top)
-            Text("Space switches press the standard Mission Control shortcuts (⌃← ⌃→) on your behalf. Test each action with the button on its row.")
+            Text("If you changed the system-wide Mission Control shortcuts, click a shortcut button and enter the matching key combination. Slaptop uses these bindings only to switch Spaces or open Mission Control; use Test to try each action without tapping the display.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Space-action results (including permission errors) land in the
             // shared status message; without surfacing it here, a failing
@@ -243,6 +268,7 @@ struct SettingsView: View {
             Label(model.statusMessage, systemImage: "info.circle")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -267,10 +293,12 @@ struct SettingsView: View {
             Text(updater.statusDescription)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
 
             Text("Updates come from the project's GitHub releases. Each downloaded update is verified against Slaptop's code signature before it is installed, and Slaptop relaunches automatically afterwards.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -286,6 +314,7 @@ struct SettingsView: View {
             Text("The helper runs as root because macOS restricts direct access to the AppleSPU motion sensor. It only reads motion reports and has no network or file access logic.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 8) {
                 Button("Repair Sensor Service") {
                     model.repairSensorService()
@@ -298,6 +327,7 @@ struct SettingsView: View {
             Text("Repair reinstalls the helper's background registration. Use it if Slaptop reports that it couldn't communicate with the helper — typically after an update, when macOS still expects the previous version's helper.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -333,7 +363,11 @@ struct SettingsView: View {
         return MappingRow(
             tap: tapLabel(for: side),
             action: action.label,
-            symbol: action.symbol
+            symbol: action.symbol,
+            keyBinding: Binding(
+                get: { model.keyBinding(for: action) },
+                set: { model.setKeyBinding($0, for: action) }
+            )
         ) {
             model.testAction(action)
         }
@@ -386,10 +420,13 @@ private struct StatusRow<Accessory: View>: View {
                 .foregroundStyle(isReady ? .green : .orange)
             VStack(alignment: .leading, spacing: 1) {
                 Text(title)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(value)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            .layoutPriority(1)
             Spacer()
             accessory
         }
@@ -400,16 +437,131 @@ private struct MappingRow: View {
     let tap: String
     let action: String
     let symbol: String
+    @Binding var keyBinding: TapKeyBinding
     let testAction: () -> Void
 
     var body: some View {
-        HStack {
+        HStack(spacing: 12) {
             Label(tap, systemImage: symbol)
+                .frame(minWidth: 145, alignment: .leading)
             Text(action)
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+                .layoutPriority(1)
             Spacer()
+            ShortcutRecorderButton(
+                binding: $keyBinding,
+                actionLabel: action
+            )
+            .fixedSize()
             Button("Test", action: testAction)
                 .controlSize(.small)
         }
+    }
+}
+
+private struct ShortcutRecorderButton: NSViewRepresentable {
+    @Binding var binding: TapKeyBinding
+    let actionLabel: String
+
+    func makeNSView(context: Context) -> ShortcutRecordingButton {
+        let button = ShortcutRecordingButton()
+        let binding = _binding
+        button.onBindingChange = { binding.wrappedValue = $0 }
+        button.actionLabel = actionLabel
+        button.binding = self.binding
+        return button
+    }
+
+    func updateNSView(_ button: ShortcutRecordingButton, context: Context) {
+        button.actionLabel = actionLabel
+        if !button.isRecording {
+            button.binding = binding
+        }
+    }
+}
+
+private final class ShortcutRecordingButton: NSButton {
+    var binding = SpaceKeyBindings.standard.switchLeft {
+        didSet { updatePresentation() }
+    }
+    var actionLabel = "Shortcut" {
+        didSet { updatePresentation() }
+    }
+    var onBindingChange: ((TapKeyBinding) -> Void)?
+    private(set) var isRecording = false
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        bezelStyle = .rounded
+        controlSize = .small
+        setButtonType(.momentaryPushIn)
+        target = self
+        action = #selector(beginRecording)
+        focusRingType = .default
+        updatePresentation()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override var acceptsFirstResponder: Bool { true }
+
+    @objc private func beginRecording() {
+        isRecording = true
+        title = "Type shortcut…"
+        toolTip = "Type a shortcut, or press Escape to cancel"
+        setAccessibilityValue("Waiting for a shortcut")
+        window?.makeFirstResponder(self)
+    }
+
+    override func keyDown(with event: NSEvent) {
+        guard !event.isARepeat else { return }
+        let flags = event.modifierFlags.intersection([.control, .option, .shift, .command])
+        if event.keyCode == 53, flags.isEmpty {
+            finishRecording()
+            return
+        }
+
+        var modifiers: KeyBindingModifiers = []
+        if flags.contains(.control) { modifiers.insert(.control) }
+        if flags.contains(.option) { modifiers.insert(.option) }
+        if flags.contains(.shift) { modifiers.insert(.shift) }
+        if flags.contains(.command) { modifiers.insert(.command) }
+
+        let newBinding = TapKeyBinding(keyCode: event.keyCode, modifiers: modifiers)
+        guard newBinding.isValid else {
+            NSSound.beep()
+            return
+        }
+        binding = newBinding
+        onBindingChange?(newBinding)
+        finishRecording()
+    }
+
+    override func resignFirstResponder() -> Bool {
+        let resigned = super.resignFirstResponder()
+        if resigned, isRecording {
+            isRecording = false
+            updatePresentation()
+        }
+        return resigned
+    }
+
+    private func finishRecording() {
+        isRecording = false
+        updatePresentation()
+        window?.makeFirstResponder(nil)
+    }
+
+    private func updatePresentation() {
+        guard !isRecording else { return }
+        title = binding.displayString
+        toolTip = "Click to change the shortcut for \(actionLabel)"
+        setAccessibilityLabel("Shortcut for \(actionLabel)")
+        setAccessibilityValue(binding.accessibilityDescription)
+        setAccessibilityHelp("Click, then type a new key combination")
+        invalidateIntrinsicContentSize()
     }
 }

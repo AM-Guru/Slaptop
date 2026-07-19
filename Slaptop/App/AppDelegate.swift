@@ -151,7 +151,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             }
             settingsWindowController = makeWindow(
                 title: "Slaptop Settings",
-                size: NSSize(width: 520, height: 610),
+                size: NSSize(width: 680, height: 720),
                 rootView: view
             )
         }

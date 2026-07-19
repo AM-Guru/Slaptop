@@ -10,36 +10,27 @@ enum MissionControlActionError: LocalizedError {
     case mustRunInstalledApplication
     case accessibilityPermissionRequired
     case keyEventCreationFailed
-    case missionControlUnavailable
-    case missionControlLaunchFailed(Error)
 
     var errorDescription: String? {
         switch self {
         case .mustRunInstalledApplication:
             return "Move Slaptop to /Applications before testing Space actions."
         case .accessibilityPermissionRequired:
-            return "Allow Slaptop under Privacy & Security → Accessibility so it can switch Spaces, then tap again."
+            return "Allow Slaptop under Privacy & Security → Accessibility so it can use your Mission Control and Spaces shortcuts, then tap again."
         case .keyEventCreationFailed:
-            return "macOS did not accept the Mission Control shortcut keystroke."
-        case .missionControlUnavailable:
-            return "The macOS Mission Control application could not be found."
-        case let .missionControlLaunchFailed(error):
-            return "Mission Control could not be launched: \(error.localizedDescription)"
+            return "macOS did not accept the configured Mission Control shortcut keystroke."
         }
     }
 }
 
-/// Performs Space switches by synthesizing the standard Mission Control
-/// shortcuts (⌃← / ⌃→). Direct SkyLight space manipulation only updates
+/// Switches Spaces and opens Mission Control by synthesizing the configured
+/// Mission Control keyboard shortcuts. Direct SkyLight space manipulation only updates
 /// WindowServer's current-space record without compositing the change on
-/// modern macOS, so the supported shortcut path is used instead. This
-/// requires the user to grant Accessibility access.
+/// modern macOS, so the supported shortcut path is used instead. Users can
+/// remap each binding to match their system-wide Mission Control settings.
+/// This requires the user to grant Accessibility access.
 final class MissionControlController {
     static let installedApplicationPath = "/Applications/Slaptop.app"
-
-    private static let leftArrowKeyCode: CGKeyCode = 123
-    private static let rightArrowKeyCode: CGKeyCode = 124
-    private static let controlKeyCode: CGKeyCode = 59
 
     private let actionQueue = DispatchQueue(
         label: "guru.am.slaptop.mission-control",
@@ -76,7 +67,7 @@ final class MissionControlController {
     }
 
     func perform(
-        _ action: SpaceAction,
+        _ binding: TapKeyBinding,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         guard Self.isInstalledApplication else {
@@ -84,88 +75,91 @@ final class MissionControlController {
             return
         }
 
-        switch action {
-        case .launchMissionControl:
-            launchMissionControl(completion: completion)
-        case .switchLeft, .switchRight:
-            actionQueue.async {
-                let result = Result {
-                    try Self.postSpaceSwitchShortcut(for: action)
-                }
-                DispatchQueue.main.async {
-                    completion(result)
-                }
+        actionQueue.async {
+            let result = Result {
+                try Self.postShortcut(binding)
+            }
+            DispatchQueue.main.async {
+                completion(result)
             }
         }
     }
 
-    private static func postSpaceSwitchShortcut(for action: SpaceAction) throws {
+    private static func postShortcut(_ binding: TapKeyBinding) throws {
         guard AXIsProcessTrusted() else {
             throw MissionControlActionError.accessibilityPermissionRequired
         }
 
-        let keyCode = action == .switchRight ? rightArrowKeyCode : leftArrowKeyCode
         guard
             let source = CGEventSource(stateID: .hidSystemState),
-            let controlDown = CGEvent(
+            let keyDown = CGEvent(
                 keyboardEventSource: source,
-                virtualKey: controlKeyCode,
+                virtualKey: CGKeyCode(binding.keyCode),
                 keyDown: true
             ),
-            let keyDown = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: true),
-            let keyUp = CGEvent(keyboardEventSource: source, virtualKey: keyCode, keyDown: false),
-            let controlUp = CGEvent(
+            let keyUp = CGEvent(
                 keyboardEventSource: source,
-                virtualKey: controlKeyCode,
+                virtualKey: CGKeyCode(binding.keyCode),
                 keyDown: false
             )
         else {
             throw MissionControlActionError.keyEventCreationFailed
         }
 
-        // The Dock's symbolic-hotkey handler wants a genuine Control press,
-        // not just modifier flags on the arrow event. Arrow keys on real
-        // hardware also carry the Fn and numeric-pad flags.
-        let arrowFlags: CGEventFlags = [.maskControl, .maskSecondaryFn, .maskNumericPad]
-        controlDown.flags = .maskControl
-        keyDown.flags = arrowFlags
-        keyUp.flags = arrowFlags
-        controlUp.flags = []
+        let modifierSpecifications: [(KeyBindingModifiers, CGKeyCode, CGEventFlags)] = [
+            (.control, 59, .maskControl),
+            (.option, 58, .maskAlternate),
+            (.shift, 56, .maskShift),
+            (.command, 55, .maskCommand),
+        ]
+        let selectedModifiers = modifierSpecifications.filter {
+            binding.modifiers.contains($0.0)
+        }
 
-        controlDown.post(tap: .cghidEventTap)
+        var activeFlags: CGEventFlags = []
+        var modifierDownEvents: [CGEvent] = []
+        for (_, keyCode, flag) in selectedModifiers {
+            guard let event = CGEvent(
+                keyboardEventSource: source,
+                virtualKey: keyCode,
+                keyDown: true
+            ) else {
+                throw MissionControlActionError.keyEventCreationFailed
+            }
+            activeFlags.insert(flag)
+            event.flags = activeFlags
+            modifierDownEvents.append(event)
+        }
+
+        // Arrow keys on real hardware carry the Fn and numeric-pad flags.
+        // Dock's symbolic-hotkey handler expects those in addition to genuine
+        // modifier key-down events for Mission Control shortcuts.
+        var keyFlags = activeFlags
+        if (123...126).contains(binding.keyCode) {
+            keyFlags.formUnion([.maskSecondaryFn, .maskNumericPad])
+        }
+        keyDown.flags = keyFlags
+        keyUp.flags = keyFlags
+
+        var modifierUpEvents: [CGEvent] = []
+        for (_, keyCode, flag) in selectedModifiers.reversed() {
+            guard let event = CGEvent(
+                keyboardEventSource: source,
+                virtualKey: keyCode,
+                keyDown: false
+            ) else {
+                throw MissionControlActionError.keyEventCreationFailed
+            }
+            activeFlags.remove(flag)
+            event.flags = activeFlags
+            modifierUpEvents.append(event)
+        }
+
+        modifierDownEvents.forEach { $0.post(tap: .cghidEventTap) }
         usleep(5_000)
         keyDown.post(tap: .cghidEventTap)
         keyUp.post(tap: .cghidEventTap)
         usleep(5_000)
-        controlUp.post(tap: .cghidEventTap)
-    }
-
-    private func launchMissionControl(
-        completion: @escaping (Result<Void, Error>) -> Void
-    ) {
-        DispatchQueue.main.async {
-            let workspace = NSWorkspace.shared
-            let applicationURL = workspace.urlForApplication(
-                withBundleIdentifier: "com.apple.exposelauncher"
-            ) ?? URL(fileURLWithPath: "/System/Applications/Mission Control.app")
-
-            guard FileManager.default.fileExists(atPath: applicationURL.path) else {
-                completion(.failure(MissionControlActionError.missionControlUnavailable))
-                return
-            }
-
-            let configuration = NSWorkspace.OpenConfiguration()
-            configuration.activates = true
-            configuration.createsNewApplicationInstance = true
-            workspace.openApplication(at: applicationURL, configuration: configuration) { _, error in
-                DispatchQueue.main.async {
-                    if let error {
-                        completion(.failure(MissionControlActionError.missionControlLaunchFailed(error)))
-                    } else {
-                        completion(.success(()))
-                    }
-                }
-            }
-        }
+        modifierUpEvents.forEach { $0.post(tap: .cghidEventTap) }
     }
 }

@@ -108,6 +108,26 @@ expect_equal \
   "notarization export team" \
   "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/NotarizeOptions.plist")" \
   "${EXPECTED_TEAM_ID}"
+expect_equal \
+  "App Store export team" \
+  "$(plist_value teamID "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+  "${EXPECTED_TEAM_ID}"
+expect_equal \
+  "App Store export destination" \
+  "$(plist_value destination "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+  "upload"
+expect_equal \
+  "App Store export method" \
+  "$(plist_value method "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+  "app-store-connect"
+expect_equal \
+  "App Store export signing style" \
+  "$(plist_value signingStyle "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+  "automatic"
+expect_equal \
+  "App Store internal-testing restriction" \
+  "$(plist_value testFlightInternalTestingOnly "${GITHUB_WORKSPACE}/Distribution/AppStoreQAExportOptions.plist")" \
+  "true"
 
 if git -C "${GITHUB_WORKSPACE}" grep -n -E 'com\.kalani' -- \
   project.yml Resources Slaptop Shared SlaptopSensorDaemon 2>/dev/null; then

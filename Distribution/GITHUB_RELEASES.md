@@ -27,6 +27,10 @@ The script enables public access only while simultaneously pinning access to thi
 
 It builds an ARM64 Release app, embeds the project license and third-party notices in the app bundle, signs it with the AM Guru Developer ID Application certificate, notarizes and staples both the app and its disk image, verifies the image contains exactly `Slaptop.app`, then publishes `Slaptop.dmg` as the only uploaded GitHub Release asset. GitHub itself also displays its automatically generated source-code links on every release; those are not placed in the DMG.
 
+After the public GitHub Release is created, the same protected job creates a second signed archive with the GitHub run number as `CFBundleVersion` and uploads it to App Store Connect. `Distribution/AppStoreQAExportOptions.plist` sets `testFlightInternalTestingOnly`, so this build is restricted to internal TestFlight QA and cannot be distributed externally or released on the App Store. The workflow does not add the version to an App Review submission and does not release it to customers.
+
+The current sensor implementation uses a privileged launch daemon and a private AppleSPU interface, and the app is not sandboxed. The QA upload step deliberately emits a warning for the missing App Sandbox entitlement. Apple processing or review may reject this architecture; the automated upload is intended to make that feedback visible without presenting the build as App Store-ready.
+
 ## Protected GitHub configuration
 
 Private keys, the certificate password, and App Store Connect credentials must be repository **Secrets**, never repository Variables or committed files. The workflow requires these secret names:
@@ -65,5 +69,7 @@ gh variable set XCODE_DEVELOPER_DIR --body '/Applications/Xcode-beta.app/Content
 ```
 
 The signing certificate and API key are decoded only beneath `RUNNER_TEMP`. The job imports the certificate into a temporary keychain and deletes that keychain and all credential files on success, failure, cancellation, or timeout cleanup.
+
+`Scripts/ci-app-store-qa.sh` uses the same App Store Connect key with Xcode’s `-allowProvisioningUpdates` authentication flow. Xcode manages the App Store signing certificate and provisioning profile for the archive, uploads it with the `app-store-connect` export method, and deletes its temporary archive and key material when the step completes or fails.
 
 Before any build starts, `Scripts/validate-release-configuration.sh` verifies that the job is a `push` of the fetched `main` tip in `AM-Guru/Slaptop`, regenerates an isolated Xcode project, checks all three bundle IDs, the AM Guru team ID, signing style, ARM64 architecture, hardened runtime, launch daemon identifiers, and distribution plists, then validates the Developer ID certificate and App Store Connect private key without printing credential contents. Any changed bundle ID, team, identity, signing data, branch, repository, or event fails the job before compilation.

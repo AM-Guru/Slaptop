@@ -66,6 +66,7 @@ final class AppModel: ObservableObject {
             defaults.set(tapDirection.rawValue, forKey: TapDirectionPreference.key)
         }
     }
+    @Published private(set) var keyBindings: SpaceKeyBindings
 
     var isInstalledInApplications: Bool {
         MissionControlController.isInstalledApplication
@@ -114,6 +115,7 @@ final class AppModel: ObservableObject {
         tapDirection = TapDirectionPreference(
             rawValue: defaults.string(forKey: TapDirectionPreference.key) ?? ""
         ) ?? .natural
+        keyBindings = SpaceKeyBindings.load(from: defaults)
         isCalibrated = classifier.isCalibrated
         calibratedSides = classifier.calibratedSides
 
@@ -381,10 +383,31 @@ final class AppModel: ObservableObject {
     }
 
     func testAction(_ action: SpaceAction) {
-        statusMessage = "Performing \(action.label)…"
-        missionControlController.perform(action) { [weak self] result in
-            self?.finishSpaceAction(result, successMessage: action.label)
+        let binding = keyBinding(for: action)
+        statusMessage = "Performing \(binding.displayString) for \(action.label)…"
+        missionControlController.perform(binding) { [weak self] result in
+            self?.finishSpaceAction(
+                result,
+                successMessage: "\(action.label) · \(binding.displayString)"
+            )
         }
+    }
+
+    func keyBinding(for action: SpaceAction) -> TapKeyBinding {
+        keyBindings.binding(for: action)
+    }
+
+    func setKeyBinding(_ binding: TapKeyBinding, for action: SpaceAction) {
+        guard binding.isValid else { return }
+        keyBindings.set(binding, for: action)
+        keyBindings.save(to: defaults)
+        statusMessage = "\(action.label) now uses \(binding.displayString)."
+    }
+
+    func restoreDefaultKeyBindings() {
+        keyBindings = .standard
+        defaults.removeObject(forKey: SpaceKeyBindings.defaultsKey)
+        statusMessage = "Restored the default Mission Control and Spaces shortcuts."
     }
 
     private func activateSensorService(for request: MonitoringRequest) {
@@ -648,9 +671,10 @@ final class AppModel: ObservableObject {
 
         lastTapTriggeredAction = true
         let action = side.action(for: tapDirection)
-        let successMessage = "\(side.label) tap → \(action.label)"
+        let binding = keyBinding(for: action)
+        let successMessage = "\(side.label) tap → \(action.label) · \(binding.displayString)"
         statusMessage = "\(successMessage)…"
-        missionControlController.perform(action) { [weak self] result in
+        missionControlController.perform(binding) { [weak self] result in
             self?.finishSpaceAction(result, successMessage: successMessage)
         }
     }

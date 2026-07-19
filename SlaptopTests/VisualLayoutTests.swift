@@ -43,7 +43,7 @@ final class VisualLayoutTests: XCTestCase {
 
         let model = AppModel(defaults: defaults, automaticallyEnable: false)
         let hostingView = NSHostingView(rootView: SettingsView(model: model))
-        hostingView.frame = CGRect(x: 0, y: 0, width: 520, height: 610)
+        hostingView.frame = CGRect(x: 0, y: 0, width: 680, height: 720)
         hostingView.layoutSubtreeIfNeeded()
 
         guard let scrollView = firstSubview(of: NSScrollView.self, in: hostingView) else {
@@ -51,6 +51,12 @@ final class VisualLayoutTests: XCTestCase {
         }
 
         scrollView.layoutSubtreeIfNeeded()
+        XCTAssertEqual(
+            scrollView.contentView.bounds.origin.y,
+            0,
+            accuracy: 0.5,
+            "Settings should open at the top of the first section"
+        )
         let viewportHeight = scrollView.contentView.bounds.height
         let documentHeight = try XCTUnwrap(scrollView.documentView).bounds.height
         XCTAssertTrue(scrollView.hasVerticalScroller)
@@ -60,6 +66,43 @@ final class VisualLayoutTests: XCTestCase {
         scrollView.contentView.scroll(to: NSPoint(x: 0, y: maximumOffset))
         scrollView.reflectScrolledClipView(scrollView.contentView)
         XCTAssertGreaterThan(scrollView.contentView.bounds.origin.y, 0)
+    }
+
+    func testSettingsShortcutRecorderCapturesAKeyCombination() throws {
+        let suiteName = "SlaptopShortcutRecorderTests"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let model = AppModel(defaults: defaults, automaticallyEnable: false)
+        let hostingView = NSHostingView(rootView: SettingsView(model: model))
+        hostingView.frame = CGRect(x: 0, y: 0, width: 680, height: 720)
+        hostingView.layoutSubtreeIfNeeded()
+
+        let recorder = try XCTUnwrap(
+            firstSubview(of: NSButton.self, in: hostingView, matching: { $0.title == "⌃←" })
+        )
+        let event = try XCTUnwrap(NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: [.shift, .command],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            characters: "K",
+            charactersIgnoringModifiers: "k",
+            isARepeat: false,
+            keyCode: 40
+        ))
+
+        recorder.performClick(nil)
+        recorder.keyDown(with: event)
+
+        XCTAssertEqual(
+            model.keyBinding(for: .switchLeft),
+            TapKeyBinding(keyCode: 40, modifiers: [.shift, .command])
+        )
+        XCTAssertEqual(recorder.title, "⇧⌘K")
     }
 
     func testPrimaryViewsRenderAtTheirShippingSizes() throws {
@@ -73,12 +116,12 @@ final class VisualLayoutTests: XCTestCase {
         let model = AppModel(defaults: defaults, automaticallyEnable: false)
         try render(
             SettingsView(model: model),
-            size: CGSize(width: 520, height: 610),
+            size: CGSize(width: 680, height: 720),
             to: directory.appendingPathComponent("settings.png")
         )
         try renderScrolledToBottom(
             SettingsView(model: model),
-            size: CGSize(width: 520, height: 610),
+            size: CGSize(width: 680, height: 720),
             to: directory.appendingPathComponent("settings-bottom.png")
         )
         try render(
@@ -183,6 +226,20 @@ final class VisualLayoutTests: XCTestCase {
         if let match = view as? T { return match }
         for subview in view.subviews {
             if let match = firstSubview(of: type, in: subview) {
+                return match
+            }
+        }
+        return nil
+    }
+
+    private func firstSubview<T: NSView>(
+        of type: T.Type,
+        in view: NSView,
+        matching predicate: (T) -> Bool
+    ) -> T? {
+        if let match = view as? T, predicate(match) { return match }
+        for subview in view.subviews {
+            if let match = firstSubview(of: type, in: subview, matching: predicate) {
                 return match
             }
         }

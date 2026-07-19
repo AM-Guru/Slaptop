@@ -1,4 +1,4 @@
-name: Build notarized macOS release
+name: Build macOS release and stage App Store QA
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       github.ref_type == 'branch'
-    name: Sign, notarize, and release Slaptop
+    name: Sign, publish, and upload Slaptop for QA
     runs-on:
       group: slaptop-main-release
       labels: [self-hosted, macOS, macos-build, xcode]
@@ -107,3 +107,11 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "${RELEASE_TITLE}" \
             --generate-notes
+
+      - name: Package and upload Mac App Store QA build
+        shell: bash
+        env:
+          APP_STORE_CONNECT_PRIVATE_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY_BASE64 }}
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: Scripts/ci-app-store-qa.sh
