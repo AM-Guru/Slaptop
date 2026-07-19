@@ -105,6 +105,43 @@ final class VisualLayoutTests: XCTestCase {
         XCTAssertEqual(recorder.title, "⇧⌘K")
     }
 
+    func testSettingsShortcutRecorderCapturesAMacOSSystemShortcut() throws {
+        let suiteName = "SlaptopSystemShortcutRecorderTests"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defaults.removePersistentDomain(forName: suiteName)
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        let model = AppModel(defaults: defaults, automaticallyEnable: false)
+        let hostingView = NSHostingView(rootView: SettingsView(model: model))
+        hostingView.frame = CGRect(x: 0, y: 0, width: 680, height: 720)
+        hostingView.layoutSubtreeIfNeeded()
+
+        let recorder = try XCTUnwrap(
+            firstSubview(of: NSButton.self, in: hostingView, matching: { $0.title == "⌃←" })
+        )
+        let event = try XCTUnwrap(NSEvent.keyEvent(
+            with: .keyDown,
+            location: .zero,
+            modifierFlags: .control,
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            characters: String(UnicodeScalar(NSRightArrowFunctionKey)!),
+            charactersIgnoringModifiers: String(UnicodeScalar(NSRightArrowFunctionKey)!),
+            isARepeat: false,
+            keyCode: 124
+        ))
+
+        recorder.performClick(nil)
+        XCTAssertTrue(recorder.performKeyEquivalent(with: event))
+
+        XCTAssertEqual(
+            model.keyBinding(for: .switchLeft),
+            TapKeyBinding(keyCode: 124, modifiers: .control)
+        )
+        XCTAssertEqual(recorder.title, "⌃→")
+    }
+
     func testPrimaryViewsRenderAtTheirShippingSizes() throws {
         let directory = URL(fileURLWithPath: NSTemporaryDirectory())
             .appendingPathComponent("SlaptopVisualQA", isDirectory: true)

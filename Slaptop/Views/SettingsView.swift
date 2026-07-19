@@ -38,7 +38,10 @@ struct SettingsView: View {
                     customGesturePatternsSection
                 }
                 .padding(.horizontal, 24)
-                .padding(.bottom, 24)
+                // Leave enough scroll runway for wrapped controls in the last
+                // card. NSHostingView can otherwise report its document height
+                // before the final multiline text finishes resolving.
+                .padding(.bottom, 72)
                 // Keep the first section heading clear of NSScrollView's
                 // content-edge clipping at the initial zero offset.
                 .padding(.top, 32)
@@ -189,7 +192,7 @@ struct SettingsView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Text("Minimum time between taps")
+                    Text("Minimum time between impacts")
                     Spacer()
                     Text(tapIntervalLabel)
                         .foregroundStyle(.secondary)
@@ -200,8 +203,8 @@ struct SettingsView: View {
                     in: TapTiming.minimumInterval...TapTiming.maximumInterval,
                     step: 0.01
                 )
-                .accessibilityLabel("Minimum time between detected taps")
-                Text("Shorter intervals allow faster repeated Space changes. The fastest setting accepts up to three deliberate taps per second.")
+                .accessibilityLabel("Minimum time between detected impacts")
+                Text("Shorter intervals allow faster repeated Space changes and denser custom knock codes. The fastest setting accepts impacts 100 ms apart.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -390,7 +393,7 @@ struct SettingsView: View {
                 }
             }
 
-            Text("While custom patterns are configured, Slaptop samples impacts at its fastest rate so it can recognize their rhythm. Your minimum interval still applies to ordinary Space actions.")
+            Text("The minimum time between impacts under Tap Detection applies while learning and recognizing custom patterns. Lower it to capture faster knock codes.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -502,7 +505,7 @@ struct SettingsView: View {
     private var tapIntervalLabel: String {
         let milliseconds = Int((model.minimumTapInterval * 1_000).rounded())
         let rate = TapTiming.tapsPerSecond(for: model.minimumTapInterval)
-        return "\(milliseconds) ms · \(rate.formatted(.number.precision(.fractionLength(1)))) taps/s"
+        return "\(milliseconds) ms · \(rate.formatted(.number.precision(.fractionLength(1)))) impacts/s"
     }
 
     private var calibrationPromptColor: Color {
@@ -899,6 +902,34 @@ private final class ShortcutRecordingButton: NSButton {
     }
     var onBindingChange: ((TapKeyBinding) -> Void)?
     private(set) var isRecording = false
+    private var localKeyDownMonitor: Any?
+    private var keyboardEventTap: CFMachPort?
+    private var keyboardEventTapSource: CFRunLoopSource?
+
+    private static let keyboardEventTapCallback: CGEventTapCallBack = {
+        _, type, event, userInfo in
+        guard let userInfo else { return Unmanaged.passUnretained(event) }
+        let button = Unmanaged<ShortcutRecordingButton>
+            .fromOpaque(userInfo)
+            .takeUnretainedValue()
+
+        if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
+            if let tap = button.keyboardEventTap {
+                CGEvent.tapEnable(tap: tap, enable: true)
+            }
+            return Unmanaged.passUnretained(event)
+        }
+
+        guard type == .keyDown, button.capture(event) else {
+            return Unmanaged.passUnretained(event)
+        }
+        // A system-wide shortcut such as Control-Left is normally consumed by
+        // macOS before AppKit sends keyDown to the recording button. Capture it
+        // at the session event tap and suppress that one invocation so
+        // recording a shortcut does not also switch Spaces or invoke another
+        // system action.
+        return nil
+    }
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -915,44 +946,37 @@ private final class ShortcutRecordingButton: NSButton {
         fatalError("init(coder:) has not been implemented")
     }
 
+    deinit {
+        stopKeyboardCapture()
+    }
+
     override var acceptsFirstResponder: Bool { true }
 
     @objc private func beginRecording() {
+        guard !isRecording else { return }
         isRecording = true
         title = "Type shortcut…"
         toolTip = "Type a shortcut, or press Escape to cancel"
         setAccessibilityValue("Waiting for a shortcut")
         window?.makeFirstResponder(self)
+        startKeyboardCapture()
     }
 
     override func keyDown(with event: NSEvent) {
-        guard !event.isARepeat else { return }
-        let flags = event.modifierFlags.intersection([.control, .option, .shift, .command])
-        if event.keyCode == 53, flags.isEmpty {
-            finishRecording()
-            return
+        if !capture(event) {
+            super.keyDown(with: event)
         }
+    }
 
-        var modifiers: KeyBindingModifiers = []
-        if flags.contains(.control) { modifiers.insert(.control) }
-        if flags.contains(.option) { modifiers.insert(.option) }
-        if flags.contains(.shift) { modifiers.insert(.shift) }
-        if flags.contains(.command) { modifiers.insert(.command) }
-
-        let newBinding = TapKeyBinding(keyCode: event.keyCode, modifiers: modifiers)
-        guard newBinding.isValid else {
-            NSSound.beep()
-            return
-        }
-        binding = newBinding
-        onBindingChange?(newBinding)
-        finishRecording()
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        capture(event) || super.performKeyEquivalent(with: event)
     }
 
     override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
         if resigned, isRecording {
             isRecording = false
+            stopKeyboardCapture()
             updatePresentation()
         }
         return resigned
@@ -960,8 +984,108 @@ private final class ShortcutRecordingButton: NSButton {
 
     private func finishRecording() {
         isRecording = false
+        stopKeyboardCapture()
         updatePresentation()
         window?.makeFirstResponder(nil)
+    }
+
+    private func startKeyboardCapture() {
+        localKeyDownMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) {
+            [weak self] event in
+            guard let self, self.isRecording else { return event }
+            return self.capture(event) ? nil : event
+        }
+
+        let keyDownMask = CGEventMask(1) << CGEventType.keyDown.rawValue
+        guard let tap = CGEvent.tapCreate(
+            tap: .cgSessionEventTap,
+            place: .headInsertEventTap,
+            options: .defaultTap,
+            eventsOfInterest: keyDownMask,
+            callback: Self.keyboardEventTapCallback,
+            userInfo: Unmanaged.passUnretained(self).toOpaque()
+        ) else { return }
+        guard let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0) else {
+            CFMachPortInvalidate(tap)
+            return
+        }
+
+        keyboardEventTap = tap
+        keyboardEventTapSource = source
+        CFRunLoopAddSource(CFRunLoopGetMain(), source, .commonModes)
+        CGEvent.tapEnable(tap: tap, enable: true)
+    }
+
+    private func stopKeyboardCapture() {
+        if let monitor = localKeyDownMonitor {
+            NSEvent.removeMonitor(monitor)
+            localKeyDownMonitor = nil
+        }
+        if let source = keyboardEventTapSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), source, .commonModes)
+            keyboardEventTapSource = nil
+        }
+        if let tap = keyboardEventTap {
+            CGEvent.tapEnable(tap: tap, enable: false)
+            CFMachPortInvalidate(tap)
+            keyboardEventTap = nil
+        }
+    }
+
+    private func capture(_ event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection([.control, .option, .shift, .command])
+        var modifiers: KeyBindingModifiers = []
+        if flags.contains(.control) { modifiers.insert(.control) }
+        if flags.contains(.option) { modifiers.insert(.option) }
+        if flags.contains(.shift) { modifiers.insert(.shift) }
+        if flags.contains(.command) { modifiers.insert(.command) }
+        return capture(
+            keyCode: event.keyCode,
+            modifiers: modifiers,
+            isRepeat: event.isARepeat
+        )
+    }
+
+    private func capture(_ event: CGEvent) -> Bool {
+        let rawKeyCode = event.getIntegerValueField(.keyboardEventKeycode)
+        guard rawKeyCode >= 0, rawKeyCode <= Int64(UInt16.max) else {
+            return isRecording
+        }
+
+        let flags = event.flags
+        var modifiers: KeyBindingModifiers = []
+        if flags.contains(.maskControl) { modifiers.insert(.control) }
+        if flags.contains(.maskAlternate) { modifiers.insert(.option) }
+        if flags.contains(.maskShift) { modifiers.insert(.shift) }
+        if flags.contains(.maskCommand) { modifiers.insert(.command) }
+        return capture(
+            keyCode: UInt16(rawKeyCode),
+            modifiers: modifiers,
+            isRepeat: event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+        )
+    }
+
+    private func capture(
+        keyCode: UInt16,
+        modifiers: KeyBindingModifiers,
+        isRepeat: Bool
+    ) -> Bool {
+        guard isRecording else { return false }
+        guard !isRepeat else { return true }
+        if keyCode == 53, modifiers.isEmpty {
+            finishRecording()
+            return true
+        }
+
+        let newBinding = TapKeyBinding(keyCode: keyCode, modifiers: modifiers)
+        guard newBinding.isValid else {
+            NSSound.beep()
+            return true
+        }
+        binding = newBinding
+        onBindingChange?(newBinding)
+        finishRecording()
+        return true
     }
 
     private func updatePresentation() {

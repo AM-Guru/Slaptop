@@ -210,7 +210,11 @@ final class MotionFeatureDetector {
         guard time - candidateStartedAt >= candidateWindow || isQuiet else { return nil }
 
         self.candidate = nil
-        lastDetectionAt = time
+        // Apply the configured interval between impact onsets, not between the
+        // end of this 55 ms feature window and the next onset. Measuring from
+        // `time` would silently add the candidate-window duration and make a
+        // displayed 100 ms minimum behave like roughly 155 ms.
+        lastDetectionAt = candidateStartedAt
         return Detection(
             features: [
                 candidate.peakAcceleration.x,

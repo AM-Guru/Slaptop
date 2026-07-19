@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#090a08">
-  <meta name="description" content="Slap/top is a free, open-source MIT-licensed macOS utility that turns display taps on an Apple Silicon Mac into direct Spaces and Mission Control actions.">
+  <meta name="description" content="Slap/top is a free, open-source MIT-licensed macOS utility that turns display taps into Spaces and Mission Control actions, and learns custom tap or knock patterns for shortcuts and text.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://slaptop.am.guru/">
   <meta property="og:title" content="Slap/top — tap your Mac, move through Spaces">
-  <meta property="og:description" content="A wonderfully unnecessary macOS utility by Kalani Helekunihi, rebuilt for Apple silicon.">
+  <meta property="og:description" content="Move through Spaces with a tap, or teach your Apple-silicon Mac custom tap and knock patterns.">
   <meta property="og:image" content="https://slaptop.am.guru/og.png?v=20260718-7">
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="2400">
@@ -16,12 +16,12 @@
   <meta property="og:image:alt" content="Slap/top social card showing the slash wordmark and an outlined laptop with nine colorful Spaces.">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Slap/top — tap your Mac, move through Spaces">
-  <meta name="twitter:description" content="A wonderfully unnecessary macOS utility by Kalani Helekunihi, rebuilt for Apple silicon.">
+  <meta name="twitter:description" content="Move through Spaces with a tap, or teach your Apple-silicon Mac custom tap and knock patterns.">
   <meta name="twitter:image" content="https://slaptop.am.guru/og.png?v=20260718-7">
   <title>Slap/top — Tap your Mac. Move through Spaces.</title>
   <link rel="alternate" type="image/svg+xml" href="og.svg?v=20260718-7" title="Slap/top social card vector source">
   <link rel="preload" as="image" href="mission-control.webp?v=20260718-4" type="image/webp">
-  <link rel="stylesheet" href="styles.css?v=20260719-1">
+  <link rel="stylesheet" href="styles.css?v=20260719-2">
   <script src="script.js?v=20260718-12" defer></script>
 </head>
 <body>
@@ -37,6 +37,7 @@
       </a>
       <nav aria-label="Primary navigation">
         <a href="#how">How it works</a>
+        <a href="#patterns">Custom patterns</a>
         <a href="#history">The story</a>
         <a class="nav-download" href="https://github.com/AM-Guru/Slaptop/releases/latest" data-latest-dmg>
           Download <span aria-hidden="true">↓</span>
@@ -57,7 +58,7 @@
           <span>Move through Spaces.</span>
         </h1>
         <p class="hero-lede reveal">
-          Slap/top listens to your Mac’s motion sensor and turns display taps into direct Mission Control actions. Left switches left. Right switches right. Top launches Mission Control. Yes, really.
+          Slap/top listens to your Mac’s motion sensor and turns display taps into Mission Control actions. Left switches left. Right switches right. Top launches Mission Control. Or teach it your own tap and knock patterns. Yes, really.
         </p>
         <div class="hero-actions reveal">
           <a class="button button-primary" href="#demo">See the slap in action <span aria-hidden="true">↓</span></a>
@@ -162,7 +163,7 @@
           <span class="flow-index">03</span>
           <div class="flow-glyph spaces-glyph" aria-hidden="true"><i></i><i></i><i></i></div>
           <h3>Switch the Space</h3>
-          <p>Slap/top performs direct managed-Space changes or launches Mission Control without generating keyboard or pointer events.</p>
+          <p>Slap/top sends the Mission Control and Spaces shortcuts configured on your Mac. If you changed the system defaults, you can remap each tap direction to match.</p>
         </article>
       </div>
 
@@ -182,9 +183,56 @@
       </div>
     </section>
 
+    <section class="pattern-section" id="patterns">
+      <div class="pattern-intro reveal">
+        <span class="section-number">03 / TEACH YOUR OWN GESTURE</span>
+        <h2>Your Mac can learn<br><em>a knock code.</em></h2>
+        <p>Beyond the three screen-edge taps, Slap/top can recognize a custom series of taps or knocks anywhere on your computer—then turn it into an action you choose.</p>
+      </div>
+
+      <div class="pattern-board reveal" aria-label="Example custom pattern with three impacts">
+        <div class="pattern-board-header">
+          <span>CUSTOM PATTERN / EXAMPLE</span>
+          <span class="pattern-ready"><i aria-hidden="true"></i> READY</span>
+        </div>
+        <div class="pattern-wave" aria-hidden="true">
+          <span class="pattern-hit pattern-hit-one"><i></i><b>01</b></span>
+          <span class="pattern-gap pattern-gap-short"></span>
+          <span class="pattern-hit pattern-hit-two"><i></i><b>02</b></span>
+          <span class="pattern-gap pattern-gap-long"></span>
+          <span class="pattern-hit pattern-hit-three"><i></i><b>03</b></span>
+        </div>
+        <div class="pattern-board-footer">
+          <div><span>ACTION</span><strong>Keyboard shortcut or typed text</strong></div>
+          <div><span>LEARNING</span><strong>Three practice performances</strong></div>
+          <div><span>FASTEST INTERVAL</span><strong>100 ms between impacts</strong></div>
+        </div>
+      </div>
+
+      <div class="pattern-grid">
+        <article class="pattern-card reveal">
+          <span class="pattern-index">01</span>
+          <h3>Perform it three times</h3>
+          <p>Give the gesture a name, choose how many impacts it contains, then repeat it naturally three times. Slap/top learns both its motion signature and its rhythm.</p>
+        </article>
+        <article class="pattern-card reveal">
+          <span class="pattern-index">02</span>
+          <h3>Choose what it does</h3>
+          <p>Assign the learned pattern to any keyboard shortcut—including your remapped system shortcuts—or have it type a saved text snippet.</p>
+        </article>
+        <article class="pattern-card reveal">
+          <span class="pattern-index">03</span>
+          <h3>Tune the tempo</h3>
+          <p>Adjust the minimum interval as low as 100 milliseconds for quick knock codes. The default remains a deliberate 333 milliseconds between recognized impacts.</p>
+        </article>
+      </div>
+
+      <p class="pattern-local reveal"><strong>Private by design.</strong> Learned patterns and their assigned actions stay on your Mac. Slap/top has no account, analytics, advertising, or motion-data upload.</p>
+    </section>
+
     <section class="history-section" id="history">
       <div class="history-intro reveal">
-        <span class="section-number">03 / Slap/top, CIRCA 2005</span>
+        <span class="section-number">04 / Slap/top, CIRCA 2005</span>
         <h2>Slap/top hit the forums.<br><em>Then the drives spoke up.</em></h2>
       </div>
 

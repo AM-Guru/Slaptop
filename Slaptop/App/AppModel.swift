@@ -181,9 +181,7 @@ final class AppModel: ObservableObject {
     }
 
     private var activeSensorMinimumTapInterval: Double {
-        customGesturePatterns.isEmpty && !customGestureTrainingState.isActive
-            ? minimumTapInterval
-            : TapTiming.minimumInterval
+        minimumTapInterval
     }
 
     init(defaults: UserDefaults = .standard, automaticallyEnable: Bool = true) {

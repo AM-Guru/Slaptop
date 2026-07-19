@@ -158,6 +158,32 @@ final class TapClassifierTests: XCTestCase {
         XCTAssertEqual(detectionCount, 2)
     }
 
+    func testMotionDetectorAcceptsDistinctImpactsOneHundredMillisecondsApart() {
+        let detector = MotionFeatureDetector()
+        detector.setSensitivity(0.29)
+        detector.setMinimumTapInterval(0.1)
+        var detectionCount = 0
+        detector.onDetection = { _ in detectionCount += 1 }
+
+        detector.consumeAcceleration(SensorVector(x: 0, y: 0, z: 1), time: 0)
+        detector.consumeGyroscope(.zero, time: 0)
+
+        detector.consumeAcceleration(SensorVector(x: 0.6, y: 0, z: 1), time: 0.01)
+        detector.consumeAcceleration(SensorVector(x: 0, y: 0, z: 1), time: 0.07)
+        XCTAssertEqual(detectionCount, 1)
+        detector.consumeAcceleration(SensorVector(x: 0, y: 0, z: 1), time: 0.08)
+
+        // This onset is only 90 ms after the first and is ignored.
+        detector.consumeAcceleration(SensorVector(x: 0.6, y: 0, z: 1), time: 0.10)
+        XCTAssertEqual(detectionCount, 1)
+
+        // The same distinct impulse becomes eligible exactly 100 ms after the
+        // previous impact began, independent of its 55 ms feature window.
+        detector.consumeAcceleration(SensorVector(x: 0.6, y: 0, z: 1), time: 0.11)
+        detector.consumeAcceleration(SensorVector(x: 0, y: 0, z: 1), time: 0.17)
+        XCTAssertEqual(detectionCount, 2)
+    }
+
     func testBuiltAppContainsSensorServicePayload() {
         XCTAssertTrue(
             SensorServiceController.hasBundledService(),
@@ -582,10 +608,12 @@ final class TapClassifierTests: XCTestCase {
         )
     }
 
-    func testTapTimingSupportsThreeTapsPerSecond() {
+    func testTapTimingSupportsFastKnockCodesAndPreservesTheExistingDefault() {
+        XCTAssertEqual(TapTiming.minimumInterval, 0.1, accuracy: 0.000_001)
         XCTAssertEqual(TapTiming.defaultInterval, 1.0 / 3.0, accuracy: 0.000_001)
         XCTAssertEqual(TapTiming.tapsPerSecond(for: TapTiming.defaultInterval), 3, accuracy: 0.000_001)
-        XCTAssertEqual(TapTiming.clamp(0.1), 1.0 / 3.0, accuracy: 0.000_001)
+        XCTAssertEqual(TapTiming.tapsPerSecond(for: TapTiming.minimumInterval), 10, accuracy: 0.000_001)
+        XCTAssertEqual(TapTiming.clamp(0.05), 0.1, accuracy: 0.000_001)
         XCTAssertEqual(TapTiming.clamp(2), 1)
     }
 
