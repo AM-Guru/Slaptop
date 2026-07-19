@@ -57,6 +57,17 @@ Choose **Show Sensor Data** in Settings to see rolling accelerometer, gyroscope,
 
 Slaptop checks this repository's GitHub releases for new versions — daily by default, configurable to weekly or manual-only in Settings → Software updates, with a "Check Now" button. When a newer build is found, Slaptop downloads the release `Slaptop.dmg`, verifies that the contained app is signed by this project's Developer ID team before replacing anything, installs it into `/Applications`, and relaunches.
 
+## Troubleshooting
+
+**"Couldn't communicate with the helper application."** — macOS's Background Task Management database still expects a previous build of Slaptop's sensor helper, so launchd kills the updated helper the moment it launches. This can happen after updating Slaptop (the helper binary changes with every release). Slaptop repairs this automatically when you enable it; if the message persists:
+
+1. Open Settings → Sensor service → **Repair Sensor Service**.
+2. If macOS asks, re-approve Slaptop under System Settings → General → Login Items & Extensions → Allow in the Background.
+3. Still stuck? Toggle Slaptop off and on in that same Login Items list, then enable Slaptop again.
+4. Last resort: `sudo sfltool resetbtm` resets the Background Task Management database (this affects other apps' background items too — they will need re-approval), then reboot and enable Slaptop.
+
+Note this state lives in Background Task Management, not in TCC/privacy permissions — the Accessibility grant for Space switching is unaffected and does not need to be re-granted.
+
 ## Distribution note
 
 The sensor path relies on undocumented macOS interfaces, so it may change in future hardware or macOS releases and is not suitable for Mac App Store distribution. A Developer ID build should be hardened, notarized, and tested on every supported MacBook family before distribution.

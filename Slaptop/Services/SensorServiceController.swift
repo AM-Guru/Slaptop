@@ -133,14 +133,23 @@ final class SensorServiceController {
             // Service Management can return EPERM when register() immediately
             // follows a daemon unregister. Apple DTS recommends returning to
             // the run loop; affected macOS releases also need a short delay
-            // for Background Task Management to finish cleanup.
+            // for Background Task Management to finish cleanup, and sometimes
+            // a second attempt after a longer one.
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
                 guard let self else { return }
                 do {
                     try self.register()
                     completion(.success(()))
                 } catch {
-                    completion(.failure(error))
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+                        guard let self else { return }
+                        do {
+                            try self.register()
+                            completion(.success(()))
+                        } catch {
+                            completion(.failure(error))
+                        }
+                    }
                 }
             }
         }

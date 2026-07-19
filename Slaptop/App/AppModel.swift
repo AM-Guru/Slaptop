@@ -134,16 +134,22 @@ final class AppModel: ObservableObject {
         }
         sensorService.onStateChange = { [weak self] running, message in
             DispatchQueue.main.async {
-                self?.isSensorRunning = running
-                self?.statusMessage = message
+                guard let self else { return }
+                self.isSensorRunning = running
+                // While a registration refresh/repair is under way the
+                // connection tear-down produces transient disconnection
+                // messages; the repair flow owns the status line then.
+                if !self.isRefreshingSensorService {
+                    self.statusMessage = message
+                }
                 if !running {
-                    if self?.isRefreshingSensorService != true {
-                        self?.isEnabled = false
-                        self?.isSensorLoggingEnabled = false
+                    if !self.isRefreshingSensorService {
+                        self.isEnabled = false
+                        self.isSensorLoggingEnabled = false
                     }
-                    self?.calibrationState = .idle
-                    self?.calibrationSamples.removeAll()
-                    self?.calibrationArmedAt = 0
+                    self.calibrationState = .idle
+                    self.calibrationSamples.removeAll()
+                    self.calibrationArmedAt = 0
                 }
             }
         }
@@ -279,6 +285,36 @@ final class AppModel: ObservableObject {
         statusMessage = isAccessibilityTrusted
             ? "Accessibility access granted."
             : "Enable Slaptop under Privacy & Security → Accessibility, then return here."
+    }
+
+    /// Manual escape hatch for the "Couldn't communicate with the helper
+    /// application" state: Background Task Management can keep a previous
+    /// build's daemon identity, making launchd kill every new spawn until the
+    /// registration is rebuilt.
+    func repairSensorService() {
+        isRefreshingSensorService = true
+        isEnabled = false
+        isSensorLoggingEnabled = false
+        isSensorRunning = false
+        statusMessage = "Repairing the sensor service registration…"
+        sensorService.reinstallService { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.isRefreshingSensorService = false
+                self.refreshSystemState()
+                switch result {
+                case .success:
+                    if self.helperAuthorization == .requiresApproval {
+                        self.sensorService.openApprovalSettings()
+                        self.statusMessage = "Re-approve Slaptop under Allow in the Background, then enable Slaptop again."
+                    } else {
+                        self.statusMessage = "Sensor service reinstalled. Enable Slaptop to reconnect."
+                    }
+                case .failure(let error):
+                    self.statusMessage = "Repair failed: \(error.localizedDescription). Toggle Slaptop off and on in System Settings → General → Login Items, then try again."
+                }
+            }
+        }
     }
 
     func removeSensorService() {
@@ -426,7 +462,7 @@ final class AppModel: ObservableObject {
             isSensorRunning = false
             guard !hasAttemptedServiceRepair else {
                 cancelMonitoringRequest(request)
-                statusMessage = "\(message) Use Remove Sensor Service, then Request Access, to reinstall it."
+                statusMessage = "\(message) Use Repair Sensor Service in Settings, then re-approve Slaptop in Login Items if asked."
                 return
             }
             // An unreachable daemon usually means launchd is killing its

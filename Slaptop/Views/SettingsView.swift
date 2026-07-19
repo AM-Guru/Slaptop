@@ -286,10 +286,18 @@ struct SettingsView: View {
             Text("The helper runs as root because macOS restricts direct access to the AppleSPU motion sensor. It only reads motion reports and has no network or file access logic.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Button("Remove Sensor Service", role: .destructive) {
-                model.removeSensorService()
+            HStack(spacing: 8) {
+                Button("Repair Sensor Service") {
+                    model.repairSensorService()
+                }
+                Button("Remove Sensor Service", role: .destructive) {
+                    model.removeSensorService()
+                }
+                .disabled(model.helperAuthorization == .notRegistered)
             }
-            .disabled(model.helperAuthorization == .notRegistered)
+            Text("Repair reinstalls the helper's background registration. Use it if Slaptop reports that it couldn't communicate with the helper — typically after an update, when macOS still expects the previous version's helper.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
