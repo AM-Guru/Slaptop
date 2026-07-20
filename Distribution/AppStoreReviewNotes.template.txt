@@ -1,0 +1,21 @@
+Slaptop is a free, open-source Utilities app licensed under the MIT License. It
+translates intentional taps on a MacBook display into the user's configured
+Mission Control and Spaces keyboard shortcuts. Users can use the default left,
+right, and top tap actions or configure custom gesture patterns and shortcut
+mappings.
+
+The Mac App Store build is sandboxed, contains no updater or privileged helper,
+and collects or transmits no user data. It requests the
+com.apple.security.temporary-exception.iokit-user-client-class entitlement for
+IOHIDLibUserClient solely for read-only accelerometer and gyroscope input from
+the built-in AppleSPU HID device. The related missing-functionality report is
+Feedback Assistant case @APP_STORE_FEEDBACK_ID@. The complete entitlement
+justification is entered in App Sandbox Usage Information.
+
+To test, run Slaptop on an Apple Silicon MacBook, complete calibration, and tap
+the left or right side of the display to move between Spaces, or tap the top to
+open Mission Control. The Settings window also provides Test buttons and custom
+pattern controls. No account or network connection is required.
+
+Source: https://github.com/AM-Guru/Slaptop
+Product and privacy information: https://slaptop.am.guru/

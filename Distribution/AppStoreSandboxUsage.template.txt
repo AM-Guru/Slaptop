@@ -1,0 +1,19 @@
+Feedback Assistant case: @APP_STORE_FEEDBACK_ID@
+
+Entitlement key:
+com.apple.security.temporary-exception.iokit-user-client-class
+
+Entitlement value:
+IOHIDLibUserClient
+
+Slaptop uses this temporary exception only to open the built-in AppleSPU HID
+accelerometer and gyroscope and receive motion input reports. The data is used
+in memory to recognize intentional taps on the MacBook display and invoke the
+user's configured Mission Control and Spaces keyboard shortcuts.
+
+The Mac App Store build does not set AppleSPU driver properties, enumerate or
+control unrelated HID devices, run a privileged helper, update itself, or use
+the exception for file, network, or process access. It collects and transmits
+no user data. There is currently no public Core Motion API for the built-in
+Mac motion sensors, which is the missing sandbox functionality reported in the
+Feedback Assistant case above.

@@ -123,6 +123,7 @@ if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
 else
   for name in \
     APP_STORE_DEVELOPMENT \
+    APP_STORE_FEEDBACK_ID \
     APP_STORE_DEVELOPMENT_P12_BASE64 \
     APP_STORE_DEVELOPMENT_P12_PASSWORD \
     APP_STORE_DISTRIBUTION \
@@ -153,6 +154,16 @@ if [[ "${RELEASE_CHANNEL}" == "github" ]]; then
     "${DEVELOPER_ID_APPLICATION}" \
     "${EXPECTED_DEVELOPER_ID}"
 else
+  if [[ ! "${APP_STORE_FEEDBACK_ID}" =~ ^FB[0-9]{6,}$ ]]; then
+    fail "APP_STORE_FEEDBACK_ID must be FB followed by at least six digits"
+  fi
+  for path in \
+    Distribution/AppStoreSandboxUsage.template.txt \
+    Distribution/AppStoreReviewNotes.template.txt \
+    Scripts/render-app-store-review-metadata.sh; do
+    [[ -f "${GITHUB_WORKSPACE}/${path}" ]] \
+      || fail "App Store review metadata file ${path} is missing"
+  done
   expect_equal \
     "App Store development identity" \
     "${APP_STORE_DEVELOPMENT}" \
@@ -283,6 +294,24 @@ fi
 
 VALIDATION_DIR="$(mktemp -d "${RUNNER_TEMP%/}/slaptop-${RELEASE_CHANNEL}-validation.XXXXXX")"
 trap 'rm -rf "${VALIDATION_DIR}"' EXIT
+
+if [[ "${RELEASE_CHANNEL}" == "app-store" ]]; then
+  review_metadata_path="${VALIDATION_DIR}/review-metadata"
+  APP_STORE_FEEDBACK_ID="${APP_STORE_FEEDBACK_ID}" \
+    "${GITHUB_WORKSPACE}/Scripts/render-app-store-review-metadata.sh" \
+    "${review_metadata_path}" >/dev/null \
+    || fail "could not generate App Store review metadata"
+  for path in \
+    "${review_metadata_path}/AppStoreSandboxUsage.txt" \
+    "${review_metadata_path}/AppStoreReviewNotes.txt"; do
+    [[ -s "${path}" ]] || fail "generated App Store review metadata is empty"
+    grep -Fq "${APP_STORE_FEEDBACK_ID}" "${path}" \
+      || fail "generated App Store review metadata omits ${APP_STORE_FEEDBACK_ID}"
+    if grep -Fq '@APP_STORE_FEEDBACK_ID@' "${path}"; then
+      fail "generated App Store review metadata contains an unresolved placeholder"
+    fi
+  done
+fi
 
 xcodegen generate \
   --spec "${GITHUB_WORKSPACE}/project.yml" \

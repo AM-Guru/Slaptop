@@ -22,7 +22,7 @@ A local Apple Silicon Mac probe produced these results:
 2. Adding only `com.apple.security.temporary-exception.iokit-user-client-class` for `IOHIDLibUserClient` allowed the sandboxed process to open the accelerometer and gyroscope and receive 74 telemetry callbacks in a three-second test.
 3. Writing AppleSPU driver power/reporting properties remained denied in the sandbox and is not needed once the device is already reporting. The `APP_STORE` build therefore omits that mutation code entirely.
 
-Apple documents the IOKit user-client temporary-exception entitlement, but temporary exceptions require a justification during App Store submission. This makes the implementation technically sandboxed and least-privilege, not a guarantee that App Review will approve the undocumented sensor interface. The fallback if Apple rejects it is to keep Slaptop distributed as a notarized Developer ID app unless Apple provides a public Mac motion API or grants an appropriate entitlement.
+Apple documents the IOKit user-client temporary-exception entitlement, but temporary exceptions require both a justification during App Store submission and a Feedback Assistant report for the missing sandbox functionality. This makes the implementation technically sandboxed and least-privilege, not a guarantee that App Review will approve the undocumented sensor interface. The fallback if Apple rejects it is to keep Slaptop distributed as a notarized Developer ID app unless Apple provides a public Mac motion API or grants an appropriate entitlement.
 
 Relevant Apple documentation:
 
@@ -31,8 +31,24 @@ Relevant Apple documentation:
 - [App Sandbox temporary exception entitlements](https://developer.apple.com/library/archive/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/AppSandboxTemporaryExceptionEntitlements.html)
 - [App sandbox information for app uploads](https://developer.apple.com/help/app-store-connect/reference/app-uploads/app-sandbox-information)
 
-## Suggested App Review explanation
+## Required submission evidence
 
-> Slaptop is a free, open-source Utilities app that translates intentional taps on a MacBook display into the user's configured Mission Control and Spaces keyboard shortcuts. The Mac App Store build is sandboxed, contains no updater or privileged helper, and collects or transmits no user data. It requests the `IOHIDLibUserClient` temporary IOKit exception solely for read-only access to accelerometer and gyroscope input reports from the built-in AppleSPU HID device. It does not set driver properties, access arbitrary HID devices, or use the exception for file, network, or process access. Source code is available at https://github.com/AM-Guru/Slaptop and product/privacy information is at https://slaptop.am.guru/.
+Before uploading another App Store build:
 
-This explanation must accompany the temporary exception. It should not claim that the AppleSPU report format is a public API.
+1. Read the automated `Invalid Binary` email from Apple and preserve its exact diagnostic. An App Store Connect build can show `Validated` while a later submission-specific automated check rejects it.
+2. File a Feedback Assistant report explaining that macOS has no public Core Motion path for the built-in Mac motion sensors and that Slaptop needs read-only `IOHIDLibUserClient` access. Do not use a placeholder or fabricated case number.
+3. Store the resulting `FB` case number as the `APP_STORE_FEEDBACK_ID` variable on the protected `slaptop-release` GitHub Environment.
+4. Generate the exact App Store Connect text locally:
+
+   ```bash
+   APP_STORE_FEEDBACK_ID=FB12345678 \
+     Scripts/render-app-store-review-metadata.sh /tmp/slaptop-app-store-metadata
+   ```
+
+5. Paste `AppStoreSandboxUsage.txt` into App Sandbox Usage Information and `AppStoreReviewNotes.txt` into Review Notes before submitting the new build.
+
+The source-of-truth templates are [AppStoreSandboxUsage.template.txt](AppStoreSandboxUsage.template.txt) and [AppStoreReviewNotes.template.txt](AppStoreReviewNotes.template.txt). They identify the temporary entitlement, its narrow use, the Feedback Assistant case, testing instructions, open-source license, and privacy behavior without claiming that the AppleSPU report format is a public API. The renderer checks the case-number format, resolves every placeholder, and enforces App Store Connect's 4,000-character field limit.
+
+The App Store validation and upload scripts fail closed when `APP_STORE_FEEDBACK_ID` is absent or malformed. They generate and validate the same metadata before touching signing credentials, but they do not modify the App Store Connect listing; step 5 remains an explicit submission task.
+
+If Apple's diagnostic says that `IOHIDLibUserClient`, the temporary exception, or direct AppleSPU access is prohibited rather than merely undocumented or unjustified, a Feedback Assistant number will not make the binary eligible. In that case, remove the App Store submission from review and continue distributing the notarized Developer ID build until Apple provides a supported API or entitlement.

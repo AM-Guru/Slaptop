@@ -15,6 +15,7 @@ required=(
   RUNNER_TEMP
   APPLE_TEAM_ID
   APP_STORE_DEVELOPMENT
+  APP_STORE_FEEDBACK_ID
   APP_STORE_DEVELOPMENT_P12_BASE64
   APP_STORE_DEVELOPMENT_P12_PASSWORD
   APP_STORE_DISTRIBUTION
@@ -39,6 +40,10 @@ done
 [[ "${APPLE_TEAM_ID}" == "59A594LZGR" ]]
 [[ "${APP_STORE_DEVELOPMENT}" == "Apple Development: Created via API (AHG2S22W82)" ]]
 [[ "${APP_STORE_DISTRIBUTION}" == "Apple Distribution: AM Guru, LLC (${APPLE_TEAM_ID})" ]]
+if [[ ! "${APP_STORE_FEEDBACK_ID}" =~ ^FB[0-9]{6,}$ ]]; then
+  echo "APP_STORE_FEEDBACK_ID must be FB followed by at least six digits." >&2
+  exit 1
+fi
 [[ "${GITHUB_RUN_NUMBER}" =~ ^[0-9]+$ ]]
 [[ "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]
 
@@ -50,6 +55,7 @@ keychain_path="${work_dir}/app-store-signing.keychain-db"
 development_p12_path="${work_dir}/apple-development.p12"
 distribution_p12_path="${work_dir}/apple-distribution.p12"
 asc_key_path="${work_dir}/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+review_metadata_path="${work_dir}/review-metadata"
 keychain_password="$(openssl rand -hex 32)"
 original_keychains=()
 
@@ -72,6 +78,20 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+
+APP_STORE_FEEDBACK_ID="${APP_STORE_FEEDBACK_ID}" \
+  "${GITHUB_WORKSPACE}/Scripts/render-app-store-review-metadata.sh" \
+  "${review_metadata_path}"
+for path in \
+  "${review_metadata_path}/AppStoreSandboxUsage.txt" \
+  "${review_metadata_path}/AppStoreReviewNotes.txt"; do
+  [[ -s "${path}" ]]
+  grep -Fq "${APP_STORE_FEEDBACK_ID}" "${path}"
+  if grep -Fq '@APP_STORE_FEEDBACK_ID@' "${path}"; then
+    echo "Generated App Store review metadata contains an unresolved placeholder." >&2
+    exit 1
+  fi
+done
 
 printf '%s' "${APP_STORE_DEVELOPMENT_P12_BASE64}" | /usr/bin/base64 -D > "${development_p12_path}"
 printf '%s' "${APP_STORE_DISTRIBUTION_P12_BASE64}" | /usr/bin/base64 -D > "${distribution_p12_path}"

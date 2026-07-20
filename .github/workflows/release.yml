@@ -130,6 +130,7 @@ jobs:
       APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
       APP_STORE_DEVELOPMENT: ${{ vars.APP_STORE_DEVELOPMENT }}
       APP_STORE_DISTRIBUTION: ${{ vars.APP_STORE_DISTRIBUTION }}
+      APP_STORE_FEEDBACK_ID: ${{ vars.APP_STORE_FEEDBACK_ID }}
 
     steps:
       - name: Check out the release commit
@@ -148,6 +149,7 @@ jobs:
             APPLE_TEAM_ID
             APP_STORE_DEVELOPMENT
             APP_STORE_DISTRIBUTION
+            APP_STORE_FEEDBACK_ID
           )
           for name in "${required[@]}"; do
             if [[ -z "${!name:-}" ]]; then
@@ -171,6 +173,10 @@ jobs:
             brew install xcodegen
           fi
           xcodegen --version
+
+      - name: Test App Store review metadata tooling
+        shell: bash
+        run: Scripts/test-app-store-review-metadata.sh
 
       - name: Validate App Store identity and project configuration
         shell: bash
