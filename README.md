@@ -80,7 +80,7 @@ Note this state lives in Background Task Management, not in TCC/privacy permissi
 
 The sensor path relies on undocumented macOS interfaces, so it may change in future hardware or macOS releases. The sandboxed App Store target is suitable for TestFlight/App Review evaluation but still carries public-API review risk; see [the Mac App Store investigation](Distribution/MAC_APP_STORE.md). A Developer ID build should be hardened, notarized, and tested on every supported MacBook family before distribution.
 
-Pushes to `main` can be built and released by the AM-Guru `macos-build` self-hosted GitHub Actions runner. The release job keeps signing and App Store Connect material in encrypted GitHub Secrets, imports the certificate into an ephemeral keychain, and publishes a notarized `Slaptop.dmg` with a branded drag-to-install layout containing `Slaptop.app` and an Applications shortcut. See [GitHub release configuration](Distribution/GITHUB_RELEASES.md) for the required protected settings.
+Pushes to `main` can be built and released by the AM-Guru `macOSvm` self-hosted GitHub Actions runner. The release job keeps signing and App Store Connect material in encrypted GitHub Secrets, imports the certificate into an ephemeral keychain, and publishes a notarized `Slaptop.dmg` with a branded drag-to-install layout containing `Slaptop.app` and an Applications shortcut. See [GitHub release configuration](Distribution/GITHUB_RELEASES.md) for the required protected settings.
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for sensor-research attribution.
 

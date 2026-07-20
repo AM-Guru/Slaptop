@@ -1,11 +1,14 @@
 # GitHub release configuration
 
-The `Build macOS releases` workflow runs only on a push to `main`. Both release jobs additionally check the exact repository, event, full ref, and ref type before GitHub may schedule them. They target the dedicated `slaptop-main-release` organization runner group and the runner carrying all of these labels:
+The `Build macOS releases` workflow runs only on a push to `main`. Both release jobs additionally check the exact repository, event, full ref, and ref type before GitHub may schedule them. They target the dedicated `slaptop-main-release` organization runner group and runners carrying all of these baseline labels:
 
 - `self-hosted`
 - `macOS`
 - `macos-build`
 - `xcode`
+- `macOSvm`
+
+The `macOSvm` label pins both jobs to the Parallels VM running a public macOS release instead of the primary Mac's beta OS. The App Store preflight additionally requires `RUNNER_NAME=macOSvm` and rejects macOS build identifiers that do not match Apple's public-release form, preventing a beta build host from producing another submission candidate.
 
 The runner group is restricted by GitHub organization policy to:
 
@@ -61,7 +64,7 @@ Configure these non-sensitive repository **Variables**:
 | `DEVELOPER_ID_APPLICATION` | `Developer ID Application: AM Guru, LLC (59A594LZGR)` |
 | `APP_STORE_DEVELOPMENT` | `Apple Development: Created via API (AHG2S22W82)` |
 | `APP_STORE_DISTRIBUTION` | `Apple Distribution: AM Guru, LLC (59A594LZGR)` |
-| `XCODE_DEVELOPER_DIR` | The selected Xcode path on the `macos-build` runner, such as `/Applications/Xcode-beta.app/Contents/Developer` |
+| `XCODE_DEVELOPER_DIR` | The selected Xcode path on the macOS runners; currently `/Applications/Xcode.app/Contents/Developer` |
 
 Configure this release-specific non-sensitive **Variable** on the protected `slaptop-release` GitHub Environment:
 
@@ -97,7 +100,7 @@ gh variable set APPLE_TEAM_ID --body '59A594LZGR' --repo AM-Guru/Slaptop
 gh variable set DEVELOPER_ID_APPLICATION --body 'Developer ID Application: AM Guru, LLC (59A594LZGR)' --repo AM-Guru/Slaptop
 gh variable set APP_STORE_DEVELOPMENT --body 'Apple Development: Created via API (AHG2S22W82)' --repo AM-Guru/Slaptop
 gh variable set APP_STORE_DISTRIBUTION --body 'Apple Distribution: AM Guru, LLC (59A594LZGR)' --repo AM-Guru/Slaptop
-gh variable set XCODE_DEVELOPER_DIR --body '/Applications/Xcode-beta.app/Contents/Developer' --repo AM-Guru/Slaptop
+gh variable set XCODE_DEVELOPER_DIR --body '/Applications/Xcode.app/Contents/Developer' --repo AM-Guru/Slaptop
 gh variable set APP_STORE_FEEDBACK_ID --body 'FB12345678' --env slaptop-release --repo AM-Guru/Slaptop
 ```
 

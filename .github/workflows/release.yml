@@ -22,7 +22,7 @@ jobs:
     name: Publish notarized GitHub release
     runs-on:
       group: slaptop-main-release
-      labels: [self-hosted, macOS, macos-build, xcode]
+      labels: [self-hosted, macOS, macos-build, xcode, macOSvm]
     environment: slaptop-release
     timeout-minutes: 60
     permissions:
@@ -122,7 +122,7 @@ jobs:
     name: Upload Mac App Store submission candidate
     runs-on:
       group: slaptop-main-release
-      labels: [self-hosted, macOS, macos-build, xcode]
+      labels: [self-hosted, macOS, macos-build, xcode, macOSvm]
     environment: slaptop-release
     timeout-minutes: 45
     env:
@@ -159,6 +159,19 @@ jobs:
           done
 
           [[ "$(uname -s)" == "Darwin" ]]
+          if [[ "${RUNNER_NAME:-}" != "macOSvm" ]]; then
+            echo "The App Store job must run on macOSvm, not ${RUNNER_NAME:-an unnamed runner}." >&2
+            exit 1
+          fi
+
+          host_os_version="$(sw_vers -productVersion)"
+          host_os_build="$(sw_vers -buildVersion)"
+          if [[ ! "${host_os_build}" =~ ^[0-9]+[A-Z][0-9]+$ ]]; then
+            echo "Refusing to build for the App Store on pre-release macOS ${host_os_version} (${host_os_build})." >&2
+            exit 1
+          fi
+
+          echo "Validated App Store build host ${RUNNER_NAME}: macOS ${host_os_version} (${host_os_build})."
           [[ -x "${DEVELOPER_DIR}/usr/bin/xcodebuild" ]]
           command -v security >/dev/null
           command -v codesign >/dev/null
