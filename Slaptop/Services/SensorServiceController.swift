@@ -82,9 +82,16 @@ final class SensorServiceController {
     }
 
     var registrationNeedsRefresh: Bool {
+        #if LOCAL_DEV
+        // The local development app deliberately shares the production
+        // daemon identity so it can use an already-approved sensor service
+        // without replacing the helper used by /Applications/Slaptop.app.
+        false
+        #else
         guard authorization == .enabled else { return false }
         return UserDefaults.standard.string(forKey: Self.registeredServiceFingerprintKey)
             != Self.currentServiceFingerprint
+        #endif
     }
 
     static func hasBundledService(in bundleURL: URL = Bundle.main.bundleURL) -> Bool {

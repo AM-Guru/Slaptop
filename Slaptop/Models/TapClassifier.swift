@@ -22,6 +22,15 @@ final class TapClassifier {
     private static let sideYawToPitchRollRatio = 0.35
     private static let topPitchRollToYawRatio = 1.5
 
+    /// A matching rotation axis only makes a calibrated location a candidate;
+    /// it is not sufficient evidence that the motion was a tap. Captured
+    /// laptop lifts, tilts, rotations, and walking motion all passed the axis
+    /// gates but remained at least 2.45 in the squared weighted-distance
+    /// metric from the location they triggered. Keep a conservative margin
+    /// below that nearest false positive so only motion inside the learned tap
+    /// shape is accepted.
+    private static let maximumCalibratedDistanceSquared = 2.0
+
     private let defaults: UserDefaults
     private(set) var leftCentroid: ImpactFeatures?
     private(set) var rightCentroid: ImpactFeatures?
@@ -109,7 +118,11 @@ final class TapClassifier {
         if let topCentroid, pitchAndRoll > abs(yaw) * Self.topPitchRollToYawRatio {
             candidates.append((.top, weightedDistance(features, topCentroid)))
         }
-        return candidates.min(by: { $0.1 < $1.1 })?.0
+        guard
+            let closest = candidates.min(by: { $0.1 < $1.1 }),
+            closest.1 <= Self.maximumCalibratedDistanceSquared
+        else { return nil }
+        return closest.0
     }
 
     func save(samples: [ImpactFeatures], for side: TapSide) {

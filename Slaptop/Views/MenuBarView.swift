@@ -12,7 +12,7 @@ final class MenuBarViewModel: ObservableObject {
     @Published private(set) var lastTapSide: TapSide?
     @Published private(set) var lastTapTriggeredAction: Bool
     @Published private(set) var tapDirection: TapDirectionPreference
-    #if !APP_STORE
+    #if !APP_STORE && !LOCAL_DEV
     @Published private(set) var updateStatus: String?
     #endif
 
@@ -33,7 +33,7 @@ final class MenuBarViewModel: ObservableObject {
         model.$lastTapSide.removeDuplicates().assign(to: &$lastTapSide)
         model.$lastTapTriggeredAction.removeDuplicates().assign(to: &$lastTapTriggeredAction)
         model.$tapDirection.removeDuplicates().assign(to: &$tapDirection)
-        #if !APP_STORE
+        #if !APP_STORE && !LOCAL_DEV
         model.updater.$phase
             .map(Self.updateStatusText(for:))
             .removeDuplicates()
@@ -45,7 +45,7 @@ final class MenuBarViewModel: ObservableObject {
         model.toggleEnabled()
     }
 
-    #if !APP_STORE
+    #if !APP_STORE && !LOCAL_DEV
     func checkForUpdates() {
         model.updater.checkForUpdates()
     }
@@ -142,7 +142,7 @@ struct MenuBarView: View {
 
             VStack(spacing: 2) {
                 MenuBarRow(title: "Settings…", symbol: "slider.horizontal.3", action: showSettings)
-                #if !APP_STORE
+                #if !APP_STORE && !LOCAL_DEV
                 MenuBarRow(
                     title: "Check for Updates…",
                     symbol: "arrow.down.circle",
@@ -153,7 +153,7 @@ struct MenuBarView: View {
                 MenuBarRow(title: "Quit Slaptop", symbol: "power", action: quit)
             }
 
-            #if !APP_STORE
+            #if !APP_STORE && !LOCAL_DEV
             if let updateStatus = viewModel.updateStatus {
                 Text(updateStatus)
                     .font(.caption)

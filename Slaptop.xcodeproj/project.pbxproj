@@ -645,8 +645,9 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop;
-				PRODUCT_NAME = Slaptop;
+				PRODUCT_NAME = "$(SLAPTOP_PRODUCT_NAME)";
 				SDKROOT = macosx;
+				SLAPTOP_PRODUCT_NAME = Slaptop;
 				SKIP_INSTALL = NO;
 			};
 			name = Debug;
@@ -744,8 +745,9 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = guru.am.slaptop;
-				PRODUCT_NAME = Slaptop;
+				PRODUCT_NAME = "$(SLAPTOP_PRODUCT_NAME)";
 				SDKROOT = macosx;
+				SLAPTOP_PRODUCT_NAME = Slaptop;
 				SKIP_INSTALL = NO;
 			};
 			name = Release;

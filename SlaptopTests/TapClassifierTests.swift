@@ -459,6 +459,95 @@ final class TapClassifierTests: XCTestCase {
         XCTAssertEqual(classifier.classify(topTap), .top)
     }
 
+    func testClassifierRejectsCapturedLaptopLiftAndTiltFalsePositives() throws {
+        let classifier = try makeClassifierFromCapturedCalibration()
+        let capturedFalseImpacts = [
+            [0.031261, -0.287154, 0.308904, 77.937854, 7.700921, -1.672320],
+            [-0.045638, 0.177872, -0.295939, -64.440671, -15.250134, 2.994139],
+            [0.035006, -0.283636, 0.387302, 109.585114, 11.820242, -3.192120],
+            [-0.069739, 0.270042, -0.359711, -45.049475, 5.676884, 2.639529],
+            [0.043581, -0.287094, 0.288622, 119.046192, 12.372131, -3.163202],
+            [-0.037571, 0.189032, -0.349678, -69.974269, -12.831867, 0.935194],
+        ]
+
+        for values in capturedFalseImpacts {
+            XCTAssertNil(
+                classifier.classify(try XCTUnwrap(ImpactFeatures(values: values))),
+                "Lifting or returning the laptop to level must not launch Mission Control."
+            )
+        }
+    }
+
+    func testClassifierRejectsCapturedLaptopRotationFalsePositives() throws {
+        let classifier = try makeClassifierFromCapturedCalibration()
+        let capturedFalseImpacts = [
+            [0.301204, -0.119628, 0.281706, 5.904926, 75.225014, 19.831334],
+            [0.239169, 0.028595, 0.348403, -16.080848, 90.141596, 10.645860],
+            [-0.188487, 0.082636, -0.458017, -40.416084, -80.106668, -16.544381],
+            [-0.288863, 0.107683, -0.334931, -4.484177, -97.499555, -13.851733],
+            [0.250370, 0.073526, 0.407443, -19.781258, 82.354923, 6.487234],
+            [-0.172263, -0.095094, -0.425229, -30.511185, -50.646267, -3.237392],
+            [-0.343353, 0.078478, -0.273725, -7.172788, -93.789264, -10.533166],
+            [0.257823, 0.063422, 0.262913, 3.908914, -22.413480, 4.611305],
+            [-0.154906, 0.090305, -0.433637, -12.904562, -57.602738, 6.371140],
+        ]
+
+        for values in capturedFalseImpacts {
+            XCTAssertNil(
+                classifier.classify(try XCTUnwrap(ImpactFeatures(values: values))),
+                "Rotating a held laptop must not launch Mission Control."
+            )
+        }
+    }
+
+    func testClassifierRejectsCapturedWalkingShakeFalsePositives() throws {
+        let classifier = try makeClassifierFromCapturedCalibration()
+        let capturedFalseImpacts = [
+            [-0.363242, 0.112696, 0.048774, 10.665598, -2.489726, 14.722963],
+            [-0.511660, 0.243460, -0.059405, 15.716508, 3.439657, 20.593192],
+            [0.307949, -0.042816, 0.051983, -21.098474, -9.667621, -14.305916],
+            [-0.563917, 0.109791, -0.082231, 13.012421, -8.949830, 20.909609],
+            [-0.519347, 0.118140, 0.055373, 7.192311, 7.980883, -4.727329],
+            [-0.593005, -0.205687, -0.032719, 11.150418, -12.548638, 3.687305],
+        ]
+
+        for values in capturedFalseImpacts {
+            XCTAssertNil(
+                classifier.classify(try XCTUnwrap(ImpactFeatures(values: values))),
+                "Walking-style laptop motion must not switch Spaces."
+            )
+        }
+    }
+
+    func testCapturedLapUseBurstDoesNotTriggerDetector() {
+        let detector = MotionFeatureDetector()
+        detector.setSensitivity(0.29)
+        var detections: [MotionFeatureDetector.Detection] = []
+        detector.onDetection = { detections.append($0) }
+        let samples: [(SensorVector, SensorVector)] = [
+            (.init(x: 0.002502, y: -0.004013, z: -1.000702), .init(x: -7.080078, y: -0.122070, z: -0.854492)),
+            (.init(x: 0.003845, y: 0.004257, z: -0.998871), .init(x: -7.507324, y: 0, z: -0.671387)),
+            (.init(x: 0.035202, y: 0.032257, z: -1.064194), .init(x: -6.835938, y: 10.253906, z: 2.563477)),
+            (.init(x: 0.025101, y: 0.029465, z: -1.019257), .init(x: -7.751465, y: 12.512207, z: 2.502441)),
+            (.init(x: -0.022217, y: -0.006149, z: -0.852753), .init(x: -12.084961, y: -6.713867, z: -5.493164)),
+            (.init(x: 0.041214, y: 0.047699, z: -0.935623), .init(x: -12.878418, y: -14.099121, z: -8.911133)),
+            (.init(x: 0.026871, y: 0.077011, z: -0.959381), .init(x: -17.089844, y: -15.075684, z: -11.108398)),
+            (.init(x: 0.036514, y: 0.061661, z: -1.033218), .init(x: -14.709473, y: -11.962891, z: -9.887695)),
+            (.init(x: -0.045303, y: -0.050461, z: -1.055862), .init(x: -3.356934, y: -8.605957, z: 0.427246)),
+            (.init(x: -0.034286, y: -0.111099, z: -1.064987), .init(x: 9.521484, y: -9.399414, z: -2.441406)),
+            (.init(x: -0.037170, y: -0.009583, z: -1.094421), .init(x: 11.413574, y: 1.831055, z: -3.723145)),
+            (.init(x: -0.034378, y: 0.028397, z: -1.032959), .init(x: 8.972168, y: 6.042480, z: -3.662109)),
+        ]
+
+        for (index, sample) in samples.enumerated() {
+            let time = Double(index) * 0.04
+            detector.consumeAcceleration(sample.0, time: time)
+            detector.consumeGyroscope(sample.1, time: time)
+        }
+
+        XCTAssertTrue(detections.isEmpty)
+    }
+
     func testUncalibratedClassificationIgnoresPitchDominantImpacts() throws {
         let classifier = TapClassifier(defaults: defaults)
         let topLike = try XCTUnwrap(ImpactFeatures(values: [0, 0, 0.3, 1, 7, 0.5]))
@@ -773,6 +862,23 @@ final class TapClassifierTests: XCTestCase {
                 ),
             ]
         )
+    }
+
+    private func makeClassifierFromCapturedCalibration() throws -> TapClassifier {
+        let classifier = TapClassifier(defaults: defaults)
+        let left = try XCTUnwrap(ImpactFeatures(values: [
+            -0.294890, -0.396354, -0.440375, 1.713031, 29.210821, -19.025937,
+        ]))
+        let right = try XCTUnwrap(ImpactFeatures(values: [
+            0.414815, 0.309178, 0.211496, -7.268363, -10.585376, 19.001730,
+        ]))
+        let top = try XCTUnwrap(ImpactFeatures(values: [
+            0.121883, 0.537680, 1.290183, -53.751897, -4.747984, 7.065939,
+        ]))
+        classifier.save(samples: [left], for: .left)
+        classifier.save(samples: [right], for: .right)
+        classifier.save(samples: [top], for: .top)
+        return classifier
     }
 
     private func sample(

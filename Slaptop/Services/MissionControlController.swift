@@ -30,7 +30,11 @@ enum MissionControlActionError: LocalizedError {
 /// remap each binding to match their system-wide Mission Control settings.
 /// This requires the user to grant Accessibility access.
 final class MissionControlController {
+    #if LOCAL_DEV
+    static let installedApplicationPath = "/Applications/Slaptop-Dev.app"
+    #else
     static let installedApplicationPath = "/Applications/Slaptop.app"
+    #endif
 
     private let actionQueue = DispatchQueue(
         label: "guru.am.slaptop.mission-control",

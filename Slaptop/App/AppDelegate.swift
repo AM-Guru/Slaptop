@@ -27,6 +27,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     private var aboutWindowController: NSWindowController?
     private var sensorDataWindowController: NSWindowController?
     private var firstLaunchWindowController: NSWindowController?
+    #if DEBUG
+    private var negativeGestureCapture: NegativeGestureCapture?
+    #endif
 
     override init() {
         let defaults = UserDefaults.standard
@@ -37,6 +40,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        #if DEBUG
+        startNegativeGestureCaptureIfRequested()
+        #endif
+
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.imagePosition = .imageOnly
         item.button?.imageScaling = .scaleProportionallyDown
@@ -46,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         updateStatusItem()
         // Scheduled here rather than in AppModel's initializer so unit tests
         // constructing models never start network activity.
-        #if !APP_STORE
+        #if !APP_STORE && !LOCAL_DEV
         model.updater.startAutomaticChecks()
         #endif
 
@@ -66,6 +73,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
             presentSensorData()
         }
     }
+
+    #if DEBUG
+    /// Development-only sensor capture used to turn physical false positives
+    /// into reproducible negative classifier and detector fixtures. It runs as
+    /// a second signed XPC client, so the installed app and its calibration do
+    /// not need to be replaced or modified.
+    private func startNegativeGestureCaptureIfRequested() {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard
+            let flagIndex = arguments.firstIndex(of: "--capture-negative-gestures"),
+            arguments.indices.contains(flagIndex + 1)
+        else { return }
+
+        do {
+            let capture = try NegativeGestureCapture(
+                outputURL: URL(fileURLWithPath: arguments[flagIndex + 1]),
+                defaults: .standard
+            )
+            negativeGestureCapture = capture
+            capture.start()
+        } catch {
+            print("SLAPTOP_NEGATIVE_CAPTURE_ERROR \(error.localizedDescription)")
+        }
+    }
+    #endif
 
     func applicationWillTerminate(_ notification: Notification) {
         statusPopover?.close()
@@ -247,3 +279,116 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         window.makeKeyAndOrderFront(nil)
     }
 }
+
+#if DEBUG
+private final class NegativeGestureCapture {
+    private let outputURL: URL
+    private let fileHandle: FileHandle
+    private let service = SensorServiceController()
+    private let classifier: TapClassifier
+    private let sensitivity: Double
+    private let writeQueue = DispatchQueue(label: "guru.am.slaptop.negative-gesture-capture")
+
+    init(outputURL: URL, defaults: UserDefaults) throws {
+        self.outputURL = outputURL
+        classifier = TapClassifier(defaults: defaults)
+        sensitivity = TapSensitivity.clamp(
+            defaults.object(forKey: "sensor.sensitivity") as? Double
+                ?? TapSensitivity.defaultThreshold
+        )
+
+        guard !FileManager.default.fileExists(atPath: outputURL.path) else {
+            throw CocoaError(.fileWriteFileExists)
+        }
+        guard FileManager.default.createFile(atPath: outputURL.path, contents: nil) else {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        fileHandle = try FileHandle(forWritingTo: outputURL)
+
+        service.onSample = { [weak self] acceleration, gyroscope, magnitude, timestamp in
+            self?.append([
+                "kind": "sample",
+                "timestamp": timestamp,
+                "acceleration": acceleration.map(\.doubleValue),
+                "gyroscope": gyroscope.map(\.doubleValue),
+                "magnitude": magnitude,
+            ])
+        }
+        service.onImpact = { [weak self] numbers, magnitude in
+            self?.recordImpact(numbers, magnitude: magnitude)
+        }
+    }
+
+    deinit {
+        service.disconnect()
+        try? fileHandle.close()
+    }
+
+    func start() {
+        append([
+            "kind": "capture-start",
+            "timestamp": ProcessInfo.processInfo.systemUptime,
+            "sensitivity": sensitivity,
+            "minimumTapInterval": TapTiming.minimumInterval,
+            "calibratedSides": classifier.calibratedSides.map(\.rawValue).sorted(),
+        ])
+        service.start(
+            sensitivity: sensitivity,
+            minimumTapInterval: TapTiming.minimumInterval
+        ) { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .running:
+                self.service.setTelemetryEnabled(true)
+                print("SLAPTOP_NEGATIVE_CAPTURE_READY \(self.outputURL.path)")
+            case let .daemonRefused(message), let .unreachable(message):
+                print("SLAPTOP_NEGATIVE_CAPTURE_ERROR \(message)")
+            }
+        }
+    }
+
+    private func recordImpact(_ numbers: [NSNumber], magnitude: Double) {
+        guard let features = ImpactFeatures(numbers) else { return }
+        let timestamp = ProcessInfo.processInfo.systemUptime
+        let classification = classifier.classify(features)?.rawValue ?? "none"
+        append([
+            "kind": "impact",
+            "timestamp": timestamp,
+            "features": features.values,
+            "magnitude": magnitude,
+            "classification": classification,
+        ], synchronize: true)
+        let featureText = features.values.map { String(format: "%.5f", $0) }.joined(separator: ",")
+        print(
+            String(
+                format: "SLAPTOP_NEGATIVE_IMPACT %.6f magnitude=%.5f classification=%@ features=[%@]",
+                timestamp,
+                magnitude,
+                classification,
+                featureText
+            )
+        )
+    }
+
+    private func append(_ object: [String: Any], synchronize: Bool = false) {
+        writeQueue.async { [fileHandle] in
+            guard
+                JSONSerialization.isValidJSONObject(object),
+                var data = try? JSONSerialization.data(
+                    withJSONObject: object,
+                    options: [.sortedKeys]
+                )
+            else { return }
+            data.append(0x0A)
+            do {
+                try fileHandle.write(contentsOf: data)
+                if synchronize {
+                    try fileHandle.synchronize()
+                }
+            } catch {
+                print("SLAPTOP_NEGATIVE_CAPTURE_ERROR \(error.localizedDescription)")
+            }
+        }
+    }
+}
+#endif

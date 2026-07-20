@@ -8,14 +8,14 @@ struct SettingsView: View {
     @ObservedObject var model: AppModel
     @State private var customGestureEditor: CustomGestureEditorContext?
     @State private var customGesturePendingDeletion: CustomGesturePattern?
-    #if !APP_STORE
+    #if !APP_STORE && !LOCAL_DEV
     @ObservedObject var updater: AppUpdater
     #endif
     let showSensorData: () -> Void
 
     init(model: AppModel, showSensorData: @escaping () -> Void = {}) {
         self.model = model
-        #if !APP_STORE
+        #if !APP_STORE && !LOCAL_DEV
         self.updater = model.updater
         #endif
         self.showSensorData = showSensorData
@@ -31,8 +31,10 @@ struct SettingsView: View {
                     detectionSection
                     calibrationSection
                     mappingSection
-                    #if !APP_STORE
+                    #if !APP_STORE && !LOCAL_DEV
                     updatesSection
+                    #endif
+                    #if !APP_STORE
                     advancedSection
                     #endif
                     customGesturePatternsSection
@@ -400,7 +402,7 @@ struct SettingsView: View {
         }
     }
 
-    #if !APP_STORE
+    #if !APP_STORE && !LOCAL_DEV
     private var updatesSection: some View {
         SettingsSection(title: "Software updates", symbol: "arrow.down.circle") {
             HStack {
@@ -438,6 +440,9 @@ struct SettingsView: View {
         }
     }
 
+    #endif
+
+    #if !APP_STORE
     private var advancedSection: some View {
         SettingsSection(title: "Sensor service", symbol: "gearshape.2") {
             Text("The helper runs as root because macOS restricts direct access to the AppleSPU motion sensor. It only reads motion reports and has no network or file access logic.")
