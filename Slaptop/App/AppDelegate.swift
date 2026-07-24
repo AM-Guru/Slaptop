@@ -199,11 +199,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 size: NSSize(width: 500, height: 570),
                 rootView: AboutView()
             )
-        } else {
-            // Give every About presentation its own animation timeline so it
-            // always opens at rest instead of resuming midway through a tap.
-            aboutWindowController?.window?.contentViewController =
-                NSHostingController(rootView: AboutView())
         }
         present(aboutWindowController)
     }
@@ -216,17 +211,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
                 size: NSSize(width: 760, height: 720),
                 rootView: SensorDataView(model: model)
             )
-            sensorDataWindowController?.window?.delegate = self
         }
         present(sensorDataWindowController)
     }
 
+    /// Closed windows must not linger with live SwiftUI content: AppKit keeps
+    /// servicing an ordered-out window's tracking areas every display cycle,
+    /// and current macOS builds regenerate the pointer image on each pass,
+    /// which pegs the main thread while the app is otherwise idle. Detach the
+    /// hosting view and drop the controller; presenters rebuild on demand.
     func windowWillClose(_ notification: Notification) {
-        guard
-            let window = notification.object as? NSWindow,
-            window === sensorDataWindowController?.window
-        else { return }
-        model.setSensorDataPresentationActive(false)
+        guard let window = notification.object as? NSWindow else { return }
+
+        if window === sensorDataWindowController?.window {
+            model.setSensorDataPresentationActive(false)
+            sensorDataWindowController = nil
+        } else if window === settingsWindowController?.window {
+            settingsWindowController = nil
+        } else if window === aboutWindowController?.window {
+            aboutWindowController = nil
+        } else if window === firstLaunchWindowController?.window {
+            firstLaunchWindowController = nil
+        } else {
+            return
+        }
+        window.contentViewController = nil
     }
 
     private func presentFirstLaunchSetup() {
@@ -270,6 +279,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate, NSW
         window.isReleasedWhenClosed = false
         window.animationBehavior = .documentWindow
         window.center()
+        window.delegate = self
         return NSWindowController(window: window)
     }
 
